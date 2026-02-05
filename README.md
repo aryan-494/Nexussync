@@ -4,6 +4,9 @@ NexusSync is a production-grade SaaS application built to explore local-first ar
 
 It is a systems-first product focused on how modern collaborative tools handle state, time, and consistency across devices.
 
+
+
+
 Why NexusSync?
 
 Traditional SaaS applications are server-authoritative:
@@ -11,6 +14,9 @@ every action waits for the network
 offline behavior is fragile
 state correctness depends on latency
 NexusSync reverses this model.
+
+
+
 
 The browser is a first-class peer in a distributed system:
 
@@ -20,6 +26,9 @@ synchronization happens in the background
 conflicts are resolved deterministically
 This project is built for deep learning, not shortcuts.
 
+
+
+
 Core Principles - 
 
 Local-first by default
@@ -27,6 +36,9 @@ Offline-safe data model
 Shared contracts across frontend and backend
 Deterministic sync (no magic)
 Incremental complexity, production discipline
+
+
+
 
 Architecture Overview -
 
@@ -46,6 +58,9 @@ Server (Global Authority)
 ├─ WebSockets (real-time updates)
 └─ Background Workers (AI / async jobs)
 
+
+
+
 Monorepo Structure -
 
 NexusSync/
@@ -58,6 +73,8 @@ NexusSync/
 ├── package.json
 └── README.md
 
+
+
 Why a Monorepo?
 
 Frontend, backend, and sync engine must agree on data shapes.
@@ -69,7 +86,11 @@ Workspaces
 Sync operations
 This prevents schema drift and runtime inconsistencies.
 
+
+
+
 Tech Stack-
+
 
 Frontend: 
 
@@ -79,6 +100,7 @@ Tailwind CSS
 IndexedDB (via Dexie.js)
 Web Workers
 
+
 Backend:
 
 Node.js + Express
@@ -87,11 +109,17 @@ Redis (presence, rate limiting)
 WebSockets (Socket.io)
 BullMQ (background jobs)
 
+
+
+
 Tooling:
 
 pnpm (monorepo & workspace management)
 Shared TypeScript contracts
 Environment-based configuration
+
+
+
 
 Current Status -
 
@@ -99,6 +127,8 @@ Monorepo initialized
 pnpm workspace configured
 Shared contracts established
 Client application bootstrapped
+
+
 
 
 The next phase focuses on:
@@ -114,10 +144,14 @@ This project is built as if:
 its long-term quality matters more than speed
 
 
+
+
 Every layer is designed to be:
 understandable
 debuggable
 extensible
+
+
 
 No feature is added without understanding its impact on:
 
