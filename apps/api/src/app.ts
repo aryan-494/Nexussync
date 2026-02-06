@@ -1,5 +1,6 @@
 import express from "express";
 import { contextMiddleware } from "./context";
+import { requestLogger } from "./logger";
 import { HttpError } from "./errors";
 
 export function createApp() {
@@ -7,6 +8,7 @@ export function createApp() {
   app.use(express.json());
   // Attach request context early
   app.use(contextMiddleware);
+  app.use(requestLogger);
 
   app.get("/health", (req, res) => {
     res.status(200).json({
