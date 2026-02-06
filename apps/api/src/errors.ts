@@ -14,3 +14,10 @@ export class HttpError extends Error {
 
 
 }
+
+
+export class NotFoundError extends HttpError{
+    constructor(message = "Route Not found"){
+        super(message , 404);
+    }
+}

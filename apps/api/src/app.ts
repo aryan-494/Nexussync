@@ -3,6 +3,7 @@ import { contextMiddleware } from "./context";
 import { requestLogger } from "./logger";
 import { apiRouter } from "./routes";
 import { HttpError } from "./errors";
+import { NotFoundError } from "./errors";
 
 export function createApp() {
   const app = express();
@@ -12,7 +13,11 @@ export function createApp() {
   app.use(requestLogger);
   app.use("/api" , apiRouter());
 
- 
+
+  // Catch-all for unknown routes (404)
+   app.use((req, _res, next) => {
+     next(new NotFoundError(`Cannot ${req.method} ${req.path}`));
+    });
 
 
   // Global error handler 
