@@ -1,6 +1,7 @@
 import express from "express";
 import { contextMiddleware } from "./context";
 import { requestLogger } from "./logger";
+import { apiRouter } from "./routes";
 import { HttpError } from "./errors";
 
 export function createApp() {
@@ -9,13 +10,7 @@ export function createApp() {
   // Attach request context early
   app.use(contextMiddleware);
   app.use(requestLogger);
-
-  app.get("/health", (req, res) => {
-    res.status(200).json({
-      status: "ok",
-      requestId: req.context?.requestId,
-    });
-  });
+  app.use("/api" , apiRouter());
 
  
 
