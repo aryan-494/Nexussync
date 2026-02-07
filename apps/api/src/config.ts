@@ -11,3 +11,12 @@ export function loadConfig() : AppConfig {
     };
 
 }
+
+export const config = {
+  env: process.env.NODE_ENV ?? "development",
+  port: Number(process.env.PORT ?? 3000),
+
+  mongo: {
+    uri: process.env.MONGO_URI ?? "mongodb://localhost:27017/nexussync",
+  },
+}

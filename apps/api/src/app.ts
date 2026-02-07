@@ -1,6 +1,6 @@
 import express from "express";
 import { contextMiddleware } from "./context";
-import { requestLogger } from "./logger";
+import { requestLogger } from "./middleware/requestLogger";
 import { apiRouter } from "./routes";
 import { HttpError } from "./errors";
 import { NotFoundError } from "./errors";
