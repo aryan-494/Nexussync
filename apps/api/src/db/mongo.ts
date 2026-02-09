@@ -1,42 +1,44 @@
-import { MongoClient } from "mongodb"
-import { config } from "../config"
-import { logger } from "../logger"
+import { MongoClient } from "mongodb";
+import { loadConfig } from "../config";
+import { logger } from "../logger";
 
-let client: MongoClient | null = null
+let client: MongoClient | null = null;
 
 export async function connectMongo() {
   if (client) {
-    return client
+    return client;
   }
 
-  logger.info("Connecting to MongoDB...")
+  const config = loadConfig();
 
-  client = new MongoClient(config.mongo.uri)
+  logger.info("Connecting to MongoDB...");
 
-  await client.connect()
+  client = new MongoClient(config.mongo.uri);
+  await client.connect();
 
-  logger.info("MongoDB connected")
+  logger.info("MongoDB connected");
 
-  return client
+  return client;
 }
 
 export async function disconnectMongo() {
   if (!client) {
-    return
+    return;
   }
 
-  logger.info("Disconnecting MongoDB...")
+  logger.info("Disconnecting MongoDB...");
 
-  await client.close()
-  client = null
+  await client.close();
+  client = null;
 
-  logger.info("MongoDB disconnected")
+  logger.info("MongoDB disconnected");
 }
 
 export function getMongoClient(): MongoClient {
   if (!client) {
-    throw new Error("MongoDB client not connected")
+    throw new Error("MongoDB client not connected");
   }
 
-  return client
+  return client;
 }
+

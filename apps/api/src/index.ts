@@ -3,6 +3,10 @@ import { startServer, stopServer } from "./server"
 import { loadConfig } from "./config"
 import { connectMongo, disconnectMongo } from "./db/mongo"
 import { logger } from "./logger"
+import "dotenv/config";
+
+
+
 
 async function bootstrap() {
   const config = loadConfig()
