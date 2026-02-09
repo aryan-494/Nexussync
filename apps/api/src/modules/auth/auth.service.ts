@@ -19,6 +19,7 @@ export async function loginUser(
   password: string
 ): Promise<LoginResult> {
   const config = loadConfig();
+  console.log("[LOGIN] JWT_SECRET =", config.auth.jwtSecret);
 
   // 1️⃣ Normalize email
   const normalizedEmail = email.trim().toLowerCase();
