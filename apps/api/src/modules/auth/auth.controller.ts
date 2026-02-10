@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { loginUser } from "./auth.service";
 import { setAuthCookies } from "./auth.cookies";
+import { clearAuthCookies } from "./auth.cookies";
 import { refreshAccessToken } from "./auth.service";
 import {
   ACCESS_TOKEN_COOKIE,
@@ -62,5 +63,15 @@ export async function refreshController(
     maxAge: 15 * 60 * 1000,
   });
 
+  res.status(204).end();
+}
+
+
+// logout 
+export async function logoutController(
+  _req: Request,
+  res: Response
+) {
+  clearAuthCookies(res);
   res.status(204).end();
 }

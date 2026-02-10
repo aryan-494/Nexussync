@@ -89,6 +89,7 @@ export async function refreshAccessToken(refreshToken : string ){
 
   // Issue new access token 
   const newAccessToken = jwt.sign(
+    //sub = the unique identifier of the entity the token represents
     {
       sub:payload.sub,
     },
