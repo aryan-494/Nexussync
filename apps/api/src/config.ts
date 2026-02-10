@@ -28,7 +28,7 @@ export function loadConfig(): AppConfig {
     throw new Error("JWT_SECRET is not set");
   }
 
-  const jwtExpiresIn = process.env.JWT_EXPIRES_IN ?? "15m";
+  const jwtExpiresIn = process.env.JWT_EXPIRES_IN ?? "900";
 
   return {
     env,

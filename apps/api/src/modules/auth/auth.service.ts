@@ -19,7 +19,7 @@ export async function loginUser(
   password: string
 ): Promise<LoginResult> {
   const config = loadConfig();
-  console.log("[LOGIN] JWT_SECRET =", config.auth.jwtSecret);
+  
 
   // 1️⃣ Normalize email
   const normalizedEmail = email.trim().toLowerCase();
@@ -27,7 +27,6 @@ export async function loginUser(
   // 2️⃣ Find user
   const user = await findUserByEmail(normalizedEmail);
 
-  // Do not reveal whether email exists
   if (!user) {
     throw new HttpError("Invalid credentials", 401);
   }
@@ -51,11 +50,11 @@ export async function loginUser(
     },
     config.auth.jwtSecret,
     {
-      expiresIn: config.auth.jwtExpiresIn,
+      expiresIn: "15m",
     }
   );
 
-  // 6️⃣ Return safe response
+  // 6️⃣ Return result
   return {
     accessToken,
     user: {

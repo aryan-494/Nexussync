@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import * as jwt from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import { loadConfig } from "../config";
 import { HttpError } from "../errors";
 
@@ -23,21 +23,24 @@ export function authMiddleware(
     throw new HttpError( "Invalid authorization format" , 401);
   }
 
-  try {
-    const payload = jwt.verify(
-      token,
-      config.auth.jwtSecret
-    ) as jwt.JwtPayload;
+ try {
+  const payload = jwt.verify(
+    token,
+    config.auth.jwtSecret
+  ) as jwt.JwtPayload;
 
-    req.auth = {
-      userId: payload.sub as string,
-      email: payload.email as string,
-    };
+  
 
-    next();
-  } catch {
-    throw new HttpError( "Invalid or expired token",401);
-  }
+  req.auth = {
+    userId: payload.sub as string,
+    email: payload.email as string,
+  };
+
+  next();
+} catch (err) {
+  
+  throw new HttpError( "Invalid or expired token",401);
+}
 }
 
 
