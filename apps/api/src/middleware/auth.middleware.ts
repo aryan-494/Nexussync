@@ -2,45 +2,43 @@ import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { loadConfig } from "../config";
 import { HttpError } from "../errors";
+import { ACCESS_TOKEN_COOKIE } from "../modules/auth/auth.types";
 
 export function authMiddleware(
   req: Request,
   _res: Response,
   next: NextFunction
 ) {
-  const config = loadConfig(); // ✅ MOVE HERE
+  const config = loadConfig();
 
+  // 1️⃣ Read access token from HttpOnly cookie
+  let token = req.cookies?.[ACCESS_TOKEN_COOKIE];
 
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader) {
-    throw new HttpError( "Authorization header missing" , 401);
+  // 2️⃣ Temporary fallback for Authorization header (DEV ONLY)
+  if (!token && req.headers.authorization) {
+    token = req.headers.authorization.replace(/^Bearer\s+/i, "").trim();
   }
 
-  const [type, token] = authHeader.split(" ");
-
-  if (type !== "Bearer" || !token) {
-    throw new HttpError( "Invalid authorization format" , 401);
+  if (!token) {
+    throw new HttpError("Authentication required", 401);
   }
 
- try {
-  const payload = jwt.verify(
-    token,
-    config.auth.jwtSecret
-  ) as jwt.JwtPayload;
+  try {
+    const payload = jwt.verify(
+      token,
+      config.auth.jwtSecret
+    ) as jwt.JwtPayload;
 
-  
+    req.auth = {
+      userId: payload.sub as string,
+      email: payload.email as string,
+    };
 
-  req.auth = {
-    userId: payload.sub as string,
-    email: payload.email as string,
-  };
-
-  next();
-} catch (err) {
-  
-  throw new HttpError( "Invalid or expired token",401);
+    next();
+  } catch {
+    throw new HttpError("Invalid or expired session", 401);
+  }
 }
-}
+
 
 

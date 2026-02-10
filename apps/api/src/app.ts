@@ -4,10 +4,12 @@ import { requestLogger } from "./middleware/requestLogger";
 import { apiRouter } from "./routes";
 import { HttpError } from "./errors";
 import { NotFoundError } from "./errors";
+import cookieParser from "cookie-parser";
 
 export function createApp() {
   const app = express();
   app.use(express.json());
+  app.use(cookieParser()); 
   // Attach request context early
   app.use(contextMiddleware);
   app.use(requestLogger);
