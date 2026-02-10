@@ -7,6 +7,7 @@ import { HttpError } from "../../errors";
 
 export interface LoginResult {
   accessToken: string;
+  refreshToken:string;
   user: {
     id: string;
     email: string;
@@ -43,24 +44,27 @@ export async function loginUser(
   }
 
   // 5️⃣ Generate JWT
-  const accessToken = jwt.sign(
-    {
-      sub: user.id,
-      email: user.email,
-    },
-    config.auth.jwtSecret,
-    {
-      expiresIn: "15m",
-    }
-  );
+const accessToken = jwt.sign(
+  { sub: user.id, email: user.email },
+  config.auth.jwtSecret,
+  { expiresIn: "15m" }
+);
+
+const refreshToken = jwt.sign(
+  { sub: user.id },
+  config.auth.jwtSecret,
+  { expiresIn: "7d" }
+);
 
   // 6️⃣ Return result
   return {
-    accessToken,
-    user: {
-      id: user.id,
-      email: user.email,
-      status: user.status,
-    },
-  };
+  accessToken,
+  refreshToken,
+  user: {
+    id: user.id,
+    email: user.email,
+    status: user.status,
+  },
+};
+
 }

@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { loginUser } from "./auth.service";
+import { setAuthCookies } from "./auth.cookies";
 
 /**
  * POST /api/v1/auth/login
@@ -21,7 +22,10 @@ export async function loginController(
 
     const result = await loginUser(email, password);
 
-    return res.status(200).json(result);
+     setAuthCookies(res, result.accessToken, result.refreshToken);
+       res.json({
+    user: result.user,
+  });
   } catch (error) {
     next(error);
   }
