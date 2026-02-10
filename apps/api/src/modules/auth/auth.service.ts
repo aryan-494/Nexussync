@@ -68,3 +68,34 @@ const refreshToken = jwt.sign(
 };
 
 }
+
+export async function refreshAccessToken(refreshToken : string ){
+  const config = loadConfig();
+
+  let payload : jwt.JwtPayload;
+
+  try{
+    payload = jwt.verify(
+      refreshToken,
+      config.auth.jwtSecret
+    ) as jwt.JwtPayload;
+  } catch{
+    throw new HttpError("Invalid refresh token " ,401 );
+  }
+
+  if(!payload.sub){
+      throw new HttpError("Invalid refresh token payload", 401);
+  }
+
+  // Issue new access token 
+  const newAccessToken = jwt.sign(
+    {
+      sub:payload.sub,
+    },
+    config.auth.jwtSecret,
+    {
+      expiresIn:"15m",
+    }
+  );
+  return newAccessToken;
+}
