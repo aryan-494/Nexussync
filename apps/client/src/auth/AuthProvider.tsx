@@ -1,29 +1,73 @@
-import React, { createContext } from "react";
-import type { AuthState } from "./auth.types";
+import React, { createContext, useEffect, useState } from "react";
+import type { AuthState, AuthUser } from "./auth.types";
+import { getMe, refresh } from "../api/auth";
 
-/**
- * What the auth system exposes to the app
- * (functions will be added later)
- */
 export type AuthContextValue = AuthState;
 
 export const AuthContext = createContext<AuthContextValue | undefined>(
   undefined
 );
 
-/**
- * Provider skeleton
- * Logic will be added in Step-3
- */
+const initialState: AuthState = {
+  status: "unknown",
+  user: null,
+  loading: true,
+};
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const value: AuthContextValue = {
-    status: "unknown",
-    user: null,
-    loading: true,
-  };
+  const [state, setState] = useState<AuthState>(initialState);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function resolveSession() {
+      try {
+        // 1️⃣ Try current session
+        const user: AuthUser = await getMe();
+
+        if (cancelled) return;
+
+        setState({
+          status: "authenticated",
+          user,
+          loading: false,
+        });
+      } catch {
+        // 2️⃣ If access token failed, try refresh
+        try {
+          await refresh();
+
+          const user: AuthUser = await getMe();
+
+          if (cancelled) return;
+
+          setState({
+            status: "authenticated",
+            user,
+            loading: false,
+          });
+        } catch {
+          // 3️⃣ Refresh failed → logged out
+          if (cancelled) return;
+
+          setState({
+            status: "unauthenticated",
+            user: null,
+            loading: false,
+          });
+        }
+      }
+    }
+
+    resolveSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={state}>
       {children}
     </AuthContext.Provider>
   );
