@@ -1,5 +1,6 @@
 import { useState } from "react"
 import type { Task } from "@nexussync/common"
+import { AuthProvider } from "./auth/AuthProvider"
 
 function App() {
   const [tasks, setTasks] = useState<Task[]>([])
@@ -23,6 +24,7 @@ function App() {
  
 
   return (
+    
     <div className="min-h-screen bg-bg text-text p-8">
       <h1 className="text-2xl font-semibold mb-6">NexusSync</h1>
 
@@ -48,6 +50,11 @@ function App() {
       </div>
     </div>
   )
+
+   <AuthProvider>
+      {/* routes will come later */}
+      <div>App Loaded</div>
+    </AuthProvider>
 }
 
 export default App
