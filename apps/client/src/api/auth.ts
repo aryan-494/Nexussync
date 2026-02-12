@@ -39,7 +39,7 @@ async function request<T>(
 }
 
 export function register(email: string, password: string) {
-  return request<void>("/auth/register", {
+  return request<void>("/auth/signup", {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });

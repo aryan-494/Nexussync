@@ -1,8 +1,11 @@
 import React, { createContext, useEffect, useState } from "react";
 import type { AuthState, AuthUser } from "./auth.types";
-import { getMe, refresh } from "../api/auth";
+import { getMe, refresh, login as loginApi, logout as logoutApi } from "../api/auth";
 
-export type AuthContextValue = AuthState;
+export type AuthContextValue = AuthState & {
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+};
 
 export const AuthContext = createContext<AuthContextValue | undefined>(
   undefined
@@ -17,14 +20,15 @@ const initialState: AuthState = {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>(initialState);
 
+  /* -----------------------------
+     Session resolution (Step-3)
+  ------------------------------ */
   useEffect(() => {
     let cancelled = false;
 
     async function resolveSession() {
       try {
-        // 1️⃣ Try current session
         const user: AuthUser = await getMe();
-
         if (cancelled) return;
 
         setState({
@@ -33,12 +37,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           loading: false,
         });
       } catch {
-        // 2️⃣ If access token failed, try refresh
         try {
           await refresh();
-
           const user: AuthUser = await getMe();
-
           if (cancelled) return;
 
           setState({
@@ -47,7 +48,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             loading: false,
           });
         } catch {
-          // 3️⃣ Refresh failed → logged out
           if (cancelled) return;
 
           setState({
@@ -60,14 +60,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     resolveSession();
-
     return () => {
       cancelled = true;
     };
   }, []);
 
+  /* -----------------------------
+     Auth actions (Step-4)
+  ------------------------------ */
+
+  async function login(email: string, password: string) {
+    setState((s) => ({ ...s, loading: true }));
+
+    // 1️⃣ Ask backend to start session
+    await loginApi(email, password);
+
+    // 2️⃣ Backend now owns cookies → re-ask identity
+    const user: AuthUser = await getMe();
+
+    setState({
+      status: "authenticated",
+      user,
+      loading: false,
+    });
+  }
+
+  async function logout() {
+    setState((s) => ({ ...s, loading: true }));
+
+    try {
+      await logoutApi();
+    } finally {
+      // Always clear state (logout is idempotent)
+      setState({
+        status: "unauthenticated",
+        user: null,
+        loading: false,
+      });
+    }
+  }
+
   return (
-    <AuthContext.Provider value={state}>
+    <AuthContext.Provider
+      value={{
+        ...state,
+        login,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
