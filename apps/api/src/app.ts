@@ -1,48 +1,79 @@
 import express from "express";
+import cors from "cors";
+import cookieParser from "cookie-parser";
+
 import { contextMiddleware } from "./context";
 import { requestLogger } from "./middleware/requestLogger";
 import { apiRouter } from "./routes";
-import { HttpError } from "./errors";
-import { NotFoundError } from "./errors";
-import cookieParser from "cookie-parser";
+import { HttpError, NotFoundError } from "./errors";
 
 export function createApp() {
   const app = express();
+
+  /* -----------------------------
+     CORS (MUST BE FIRST)
+  ------------------------------ */
+  app.use(
+    cors({
+      origin: "http://localhost:5173",
+      credentials: true,
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization"],
+    })
+  );
+
+  // Explicit preflight support
+app.options(/.*/, cors());
+
+
+  /* -----------------------------
+     Core middleware
+  ------------------------------ */
   app.use(express.json());
-  app.use(cookieParser()); 
-  // Attach request context early
+  app.use(cookieParser());
+
   app.use(contextMiddleware);
   app.use(requestLogger);
-  app.use("/api" , apiRouter());
 
+  /* -----------------------------
+     Routes
+  ------------------------------ */
+  app.use("/api", apiRouter());
 
-  // Catch-all for unknown routes (404)
-   app.use((req, _res, next) => {
-     next(new NotFoundError(`Cannot ${req.method} ${req.path}`));
-    });
+  /* -----------------------------
+     404 handler
+  ------------------------------ */
+  app.use((req, _res, next) => {
+    next(new NotFoundError(`Cannot ${req.method} ${req.path}`));
+  });
 
+  /* -----------------------------
+     Global error handler
+  ------------------------------ */
+  app.use(
+    (
+      err: unknown,
+      req: express.Request,
+      res: express.Response,
+      _next: express.NextFunction
+    ) => {
+      const requestId = req.context?.requestId;
 
-  // Global error handler 
-  app.use((err:unknown , req:express.Request, res:express.Response, _next:express.NextFunction)=>{
-    const requestId = req.context?.requestId;
+      if (err instanceof HttpError) {
+        return res.status(err.statusCode).json({
+          error: err.message,
+          requestId,
+        });
+      }
 
-    if(err instanceof HttpError){
-      return res.status(err.statusCode).json({
-        error:err.message,
+      console.error(err);
+
+      return res.status(500).json({
+        error: "Internal Server Error",
         requestId,
       });
     }
-
-    // Unknown 
-    console.error(err);
-
-    return res.status(500).json({
-      error:"Internal Server Error",
-      requestId,
-    });
-
-  });
+  );
 
   return app;
 }
-
