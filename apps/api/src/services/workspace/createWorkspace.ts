@@ -26,59 +26,28 @@ interface CreateWorkspaceInput {
 }
 
 
-export async function createWorkspace(
-    input:CreateWorkspaceInput,
-) {
-    const session = await mongoose.startSession();
-    try{
-        session.startTransaction();
-        const slug = generateSlug(input.name);
+export async function createWorkspace(input: CreateWorkspaceInput) {
+  try {
+    const slug = generateSlug(input.name);
 
+    const workspace = await WorkspaceModel.create({
+      name: input.name,
+      slug,
+      createdBy: input.createdBy,
+    });
 
-        // create workspace 
-        const workspace = await WorkspaceModel.create(
-            [
-                {
-                    name : input.name,
-                    slug,
-                    createdBy:input.createdBy,
-                },
-            ],
-            {session}
-        )
+    await WorkspaceMemberModel.create({
+      workspaceId: workspace._id,
+      userId: input.createdBy,
+      role: "OWNER",
+    });
 
-       const workspaceId = workspace[0]._id;
-
-         // Create OWNER membership
-    await WorkspaceMemberModel.create(
-      [
-        {
-          workspaceId,
-          userId: input.createdBy,
-          role: "OWNER",
-        },
-      ],
-      { session }
-    );
-
-    // Commit everything
-    await session.commitTransaction();
-
-       // Return plain object (not mongoose doc)
-    return workspace[0].toObject();
-
-    }
-   catch (error: any) {
-    await session.abortTransaction();
-
-    // Duplicate slug (unique index)
+    return workspace.toObject();
+  } catch (error: any) {
     if (error?.code === 11000) {
       throw new HttpError("Workspace slug already exists");
     }
 
     throw new HttpError("Failed to create workspace");
-  } finally{
-    session.endSession();
   }
-
 }
