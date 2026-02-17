@@ -16,7 +16,7 @@ router.post(
   async (req, res) => {
     const workspace = await createWorkspace({
       name: req.body.name,
-     createdBy: new mongoose.Types.ObjectId(req.auth!.userId),
+     createdBy : req.auth!.userId,
     });
 
     res.status(201).json(workspace);

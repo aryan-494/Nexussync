@@ -1,8 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
-import { loginUser } from "./auth.service";
-import { setAuthCookies } from "./auth.cookies";
-import { clearAuthCookies } from "./auth.cookies";
-import { refreshAccessToken } from "./auth.service";
+import { loginUser, refreshAccessToken } from "./auth.service";
+import { setAuthCookies, clearAuthCookies } from "./auth.cookies";
 import {
   ACCESS_TOKEN_COOKIE,
   REFRESH_TOKEN_COOKIE,
@@ -28,46 +26,49 @@ export async function loginController(
 
     const result = await loginUser(email, password);
 
-     setAuthCookies(res, result.accessToken, result.refreshToken);
-       res.json({
-    user: result.user,
-  });
+    // Set auth cookies
+    setAuthCookies(res, result.accessToken, result.refreshToken);
+
+    // Return safe user data
+    res.json({
+      user: result.user,
+    });
   } catch (error) {
     next(error);
   }
 }
 
-
+/**
+ * POST /api/v1/auth/refresh
+ */
 export async function refreshController(
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) {
-  const refreshToken = req.cookies?.[REFRESH_TOKEN_COOKIE];
+  try {
+    const refreshToken = req.cookies?.[REFRESH_TOKEN_COOKIE];
 
-  if (!refreshToken) {
-    return res.status(401).json({
-      error: "Refresh token missing",
-    });
+    if (!refreshToken) {
+      return res.status(401).json({
+        error: "Refresh token missing",
+      });
+    }
+
+    const newAccessToken = await refreshAccessToken(refreshToken);
+
+    // Re-set cookies (reuse helper to avoid duplication)
+    setAuthCookies(res, newAccessToken, refreshToken);
+
+    res.status(204).end();
+  } catch (error) {
+    next(error);
   }
-
-  const newAccessToken = await refreshAccessToken(refreshToken);
-
-  // Re-set access token cookie
-  const isProd = process.env.NODE_ENV === "production";
-
-  res.cookie(ACCESS_TOKEN_COOKIE, newAccessToken, {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 15 * 60 * 1000,
-  });
-
-  res.status(204).end();
 }
 
-
-// logout 
+/**
+ * POST /api/v1/auth/logout
+ */
 export async function logoutController(
   _req: Request,
   res: Response
@@ -75,3 +76,4 @@ export async function logoutController(
   clearAuthCookies(res);
   res.status(204).end();
 }
+

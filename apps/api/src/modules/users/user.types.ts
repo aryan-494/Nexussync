@@ -1,17 +1,20 @@
-export type UserStatus = "active" | "disabled";
+// Status aligned with DB schema
+export type UserStatus = "ACTIVE" | "DISABLED";
 
-export interface User {
-  id: string;            // UUID v4
-  email: string;         // unique, lowercase
-  passwordHash: string;  // bcrypt hash
+/**
+ * Public user (what controllers return)
+ * SAFE — no passwordHash
+ */
+export interface PublicUser {
+  id: string;        // Mongo ObjectId as string
+  email: string;
   status: UserStatus;
   createdAt: Date;
-  updatedAt: Date;
 }
 
 /**
- * Input required to create a new user
- * (what signup accepts internally)
+ * Internal user creation input
+ * (used inside services only)
  */
 export interface CreateUserInput {
   email: string;

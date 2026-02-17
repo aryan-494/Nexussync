@@ -6,7 +6,7 @@ export interface Workspace  {
     name: string,
     slug:string,
     status:WorkspaceStatus,
-    createdBy:Types.ObjectId,
+    createdBy: Types.ObjectId,
     createdAt:Date,
     updatedAt:Date,
 
@@ -34,12 +34,11 @@ const workspaceSchema = new Schema<Workspace>(
       required: true,
     },
 
-    createdBy: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-
+   createdBy: {
+  type: Types.ObjectId,
+  required: true,
+  ref: "User",
+}
    },
      {
     timestamps: true,

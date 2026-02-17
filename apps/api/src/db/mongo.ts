@@ -1,44 +1,38 @@
-import { MongoClient } from "mongodb";
+import mongoose from "mongoose";
 import { loadConfig } from "../config";
 import { logger } from "../logger";
 
-let client: MongoClient | null = null;
+// 🚨 Fail fast if Mongo is not connected
+mongoose.set("bufferCommands", false);
+
+let isConnected = false;
 
 export async function connectMongo() {
-  if (client) {
-    return client;
+  if (isConnected) {
+    return;
   }
 
   const config = loadConfig();
 
-  logger.info("Connecting to MongoDB...");
+  logger.info("[mongo] connecting...");
 
-  client = new MongoClient(config.mongo.uri);
-  await client.connect();
+  await mongoose.connect(config.mongo.uri);
 
-  logger.info("MongoDB connected");
+  isConnected = true;
 
-  return client;
+  logger.info("[mongo] connected");
 }
 
 export async function disconnectMongo() {
-  if (!client) {
+  if (!isConnected) {
     return;
   }
 
-  logger.info("Disconnecting MongoDB...");
+  logger.info("[mongo] disconnecting...");
 
-  await client.close();
-  client = null;
+  await mongoose.disconnect();
 
-  logger.info("MongoDB disconnected");
+  isConnected = false;
+
+  logger.info("[mongo] disconnected");
 }
-
-export function getMongoClient(): MongoClient {
-  if (!client) {
-    throw new Error("MongoDB client not connected");
-  }
-
-  return client;
-}
-

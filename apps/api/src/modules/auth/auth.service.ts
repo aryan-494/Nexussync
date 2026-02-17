@@ -7,11 +7,11 @@ import { HttpError } from "../../errors";
 
 export interface LoginResult {
   accessToken: string;
-  refreshToken:string;
+  refreshToken: string;
   user: {
     id: string;
     email: string;
-    status: string;
+    status: "ACTIVE" | "DISABLED";
   };
 }
 
@@ -20,20 +20,19 @@ export async function loginUser(
   password: string
 ): Promise<LoginResult> {
   const config = loadConfig();
-  
 
   // 1️⃣ Normalize email
   const normalizedEmail = email.trim().toLowerCase();
 
-  // 2️⃣ Find user
+  // 2️⃣ Find user (Mongoose document / lean object)
   const user = await findUserByEmail(normalizedEmail);
 
   if (!user) {
     throw new HttpError("Invalid credentials", 401);
   }
 
-  // 3️⃣ Check user status
-  if (user.status !== "active") {
+  // 3️⃣ Check user status (aligned with schema)
+  if (user.status !== "ACTIVE") {
     throw new HttpError("User account is disabled", 403);
   }
 
@@ -43,60 +42,66 @@ export async function loginUser(
     throw new HttpError("Invalid credentials", 401);
   }
 
-  // 5️⃣ Generate JWT
-const accessToken = jwt.sign(
-  { sub: user.id, email: user.email },
-  config.auth.jwtSecret,
-  { expiresIn: "15m" }
-);
+  // 5️⃣ Generate JWTs (Mongo _id is the identity)
+  const userId = user._id.toString();
 
-const refreshToken = jwt.sign(
-  { sub: user.id },
-  config.auth.jwtSecret,
-  { expiresIn: "7d" }
-);
+  const accessToken = jwt.sign(
+    {
+      sub: userId,
+      email: user.email,
+    },
+    config.auth.jwtSecret,
+    { expiresIn: "15m" }
+  );
 
-  // 6️⃣ Return result
+  const refreshToken = jwt.sign(
+    {
+      sub: userId,
+    },
+    config.auth.jwtSecret,
+    { expiresIn: "7d" }
+  );
+
+  // 6️⃣ Return safe user data
   return {
-  accessToken,
-  refreshToken,
-  user: {
-    id: user.id,
-    email: user.email,
-    status: user.status,
-  },
-};
-
+    accessToken,
+    refreshToken,
+    user: {
+      id: userId,
+      email: user.email,
+      status: user.status,
+    },
+  };
 }
 
-export async function refreshAccessToken(refreshToken : string ){
+export async function refreshAccessToken(refreshToken: string) {
   const config = loadConfig();
 
-  let payload : jwt.JwtPayload;
+  let payload: jwt.JwtPayload;
 
-  try{
+  try {
     payload = jwt.verify(
       refreshToken,
       config.auth.jwtSecret
     ) as jwt.JwtPayload;
-  } catch{
-    throw new HttpError("Invalid refresh token " ,401 );
+  } catch {
+    throw new HttpError("Invalid refresh token", 401);
   }
 
-  if(!payload.sub){
-      throw new HttpError("Invalid refresh token payload", 401);
+  if (!payload.sub) {
+    throw new HttpError("Invalid refresh token payload", 401);
   }
 
-  // Issue new access token 
+  // Issue new access token
   const newAccessToken = jwt.sign(
-    //sub = the unique identifier of the entity the token represents
     {
-      sub:payload.sub,
+      sub: payload.sub, // Mongo userId
     },
     config.auth.jwtSecret,
     {
-      expiresIn:"15m",
+      expiresIn: "15m",
     }
   );
+
   return newAccessToken;
 }

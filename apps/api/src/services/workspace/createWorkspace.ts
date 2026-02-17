@@ -22,7 +22,7 @@ function generateSlug(name: string): string {
 
 interface CreateWorkspaceInput {
   name: string;
-  createdBy: mongoose.Types.ObjectId;
+  createdBy: string;
 }
 
 

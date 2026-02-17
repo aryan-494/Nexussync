@@ -5,9 +5,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { signupUser } from "./user.service";
 
-/**
- * POST /api/v1/auth/signup
- */
 export async function signupController(
   req: Request,
   res: Response,
@@ -36,3 +33,4 @@ export async function signupController(
     next(error);
   }
 }
+ 
