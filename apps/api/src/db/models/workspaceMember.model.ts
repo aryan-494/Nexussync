@@ -7,7 +7,8 @@ export interface WorkspaceMember {
   workspaceId: Types.ObjectId;
   userId: Types.ObjectId;
   role: WorkspaceRole;
-  joinedAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const workspaceMemberSchema = new Schema<WorkspaceMember>(
@@ -17,41 +18,31 @@ const workspaceMemberSchema = new Schema<WorkspaceMember>(
       ref: "Workspace",
       required: true,
     },
-
     userId: {
       type: Schema.Types.ObjectId,
-      ref: "User",
       required: true,
     },
-
     role: {
       type: String,
       enum: ["OWNER", "MEMBER"],
       required: true,
     },
-
-    joinedAt: {
-      type: Date,
-      default: Date.now,
-      required: true,
-    },
   },
   {
+    timestamps: true,
     versionKey: false,
   }
 );
 
-// 🔒 Prevent duplicate membership
+// Prevent duplicate membership
 workspaceMemberSchema.index(
   { workspaceId: 1, userId: 1 },
   { unique: true }
 );
 
-// 🔍 Fast lookups
-workspaceMemberSchema.index({ userId: 1 });
-workspaceMemberSchema.index({ workspaceId: 1 });
-
 export const WorkspaceMemberModel = model<WorkspaceMember>(
   "WorkspaceMember",
-  workspaceMemberSchema
+  workspaceMemberSchema,
+  "workspace_members"
 );
+

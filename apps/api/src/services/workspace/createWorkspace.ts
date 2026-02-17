@@ -1,8 +1,7 @@
-import mongoose, { mongo } from "mongoose";
-import { WorkspaceMemberModel, WorkspaceRole } from "../../db/models/workspaceMember.model";
+import mongoose from "mongoose";
 import { WorkspaceModel } from "../../db/models/workspace.model";
+import { WorkspaceMemberModel } from "../../db/models/workspaceMember.model";
 import { HttpError } from "../../errors";
-
 
 /**
  * Very small helper:
@@ -10,7 +9,6 @@ import { HttpError } from "../../errors";
  * - replace spaces with -
  * - remove unsafe chars
  */
-
 function generateSlug(name: string): string {
   return name
     .toLowerCase()
@@ -19,35 +17,63 @@ function generateSlug(name: string): string {
     .replace(/\s+/g, "-");
 }
 
-
 interface CreateWorkspaceInput {
   name: string;
-  createdBy: string;
+  createdBy: string; // userId
 }
 
+export async function createWorkspace(
+  input: CreateWorkspaceInput
+) {
+  const session = await mongoose.startSession();
 
-export async function createWorkspace(input: CreateWorkspaceInput) {
   try {
+    session.startTransaction();
+
     const slug = generateSlug(input.name);
 
-    const workspace = await WorkspaceModel.create({
-      name: input.name,
-      slug,
-      createdBy: input.createdBy,
-    });
+    // 1️⃣ Create workspace
+    const workspace = await WorkspaceModel.create(
+      [
+        {
+          name: input.name,
+          slug,
+          createdBy: input.createdBy,
+        },
+      ],
+      { session }
+    );
 
-    await WorkspaceMemberModel.create({
-      workspaceId: workspace._id,
-      userId: input.createdBy,
-      role: "OWNER",
-    });
+    const workspaceId = workspace[0]._id;
 
-    return workspace.toObject();
+    // 2️⃣ Create OWNER membership
+    await WorkspaceMemberModel.create(
+      [
+        {
+          workspaceId,
+          userId: input.createdBy,
+          role: "OWNER",
+        },
+      ],
+      { session }
+    );
+
+    // 3️⃣ Commit transaction
+    await session.commitTransaction();
+
+    // 4️⃣ Return plain object
+    return workspace[0].toObject();
+
   } catch (error: any) {
+    // Abort transaction on ANY failure
+    await session.abortTransaction();
+
     if (error?.code === 11000) {
-      throw new HttpError("Workspace slug already exists");
+      throw new HttpError("Workspace slug already exists", 409);
     }
 
-    throw new HttpError("Failed to create workspace");
+    throw new HttpError("Failed to create workspace", 500);
+  } finally {
+    session.endSession();
   }
 }
