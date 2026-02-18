@@ -1,45 +1,57 @@
 import { Router } from "express";
-import mongoose from "mongoose";
+
 import { authMiddleware } from "../../middleware/auth.middleware";
 import { workspaceContextMiddleware } from "../../middleware/workspaceContext.middleware";
+import { requireWorkspaceRole } from "../../middleware/authorization.middleware";
 import { createWorkspace } from "../../services/workspace/createWorkspace";
+import { listUserWorkspaces } from "../../services/workspace/listUserWorkspaces";
+import { addWorkspaceMember } from "../../services/workspace/addWorkspaceMember";
+import { removeWorkspaceMember } from "../../services/workspace/removeWorkspaceMember"; 
 
 const router = Router();
 
 /**
- * CREATE workspace
- * POST /api/v1/workspaces
+ * Create workspace
+ * Auth only (no workspace context yet)
  */
 router.post(
   "/",
   authMiddleware,
-  async (req, res) => {
-    const workspace = await createWorkspace({
-      name: req.body.name,
-     createdBy : req.auth!.userId,
-    });
-
-    res.status(201).json(workspace);
-  }
+  createWorkspace
 );
 
 /**
- * Workspace-scoped routes
+ * List my workspaces
+ * Auth only
  */
-router.use(
-  "/:slug",
+router.get(
+  "/",
   authMiddleware,
-  workspaceContextMiddleware
+  listUserWorkspaces
 );
 
-// test route
-router.get("/:slug/me", (req, res) => {
-  res.json({
-    user: req.context?.user,
-    workspace: req.context?.workspace,
-    role: req.context?.role,
-  });
-});
+/**
+ * Invite member (OWNER only)
+ */
+router.post(
+  "/:slug/members",
+  authMiddleware,
+  workspaceContextMiddleware,
+  requireWorkspaceRole("OWNER"),
+  addWorkspaceMember
+);
+
+/**
+ * Remove member (OWNER only)
+ */
+router.delete(
+  "/:slug/members/:userId",
+  authMiddleware,
+  workspaceContextMiddleware,
+  requireWorkspaceRole("OWNER"),
+  removeWorkspaceMember
+);
 
 export default router;
+
 
