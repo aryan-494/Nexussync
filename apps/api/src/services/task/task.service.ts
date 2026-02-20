@@ -25,3 +25,16 @@ export async function createTask(input: CreateTaskInput) {
 
   return task;
 }
+
+interface ListTasksInput {
+  workspaceId: string;
+  role: "OWNER" | "MEMBER";
+}
+
+export async function listTasks(input: ListTasksInput) {
+  const { workspaceId } = input;
+
+  return TaskModel.find({
+    workspaceId: new mongoose.Types.ObjectId(workspaceId),
+  }).sort({ createdAt: -1 });
+}
