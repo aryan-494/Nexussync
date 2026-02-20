@@ -58,3 +58,49 @@ export async function getTaskById(input: GetTaskInput) {
 
   return task;
 }
+
+interface UpdateTaskInput {
+  workspaceId: string;
+  userId: string;
+  role: "OWNER" | "MEMBER";
+  taskId: string;
+  updates: {
+    title?: string;
+    description?: string;
+    status?: TaskStatus;
+    priority?: TaskPriority;
+    assignedTo?: string | null;
+  };
+}
+
+export async function updateTask(input: UpdateTaskInput) {
+  const { workspaceId, role, taskId, updates } = input;
+
+  const task = await TaskModel.findOne({
+    _id: taskId,
+    workspaceId: new mongoose.Types.ObjectId(workspaceId),
+  });
+
+  if (!task) {
+    throw new NotFoundError("Task not found");
+  }
+
+  // MEMBER cannot assign
+  if (updates.assignedTo !== undefined && role !== "OWNER") {
+    throw new HttpError(403, "You do not have permission to assign this task");
+  }
+
+  // Apply allowed updates only
+  if (updates.title !== undefined) task.title = updates.title;
+  if (updates.description !== undefined) task.description = updates.description;
+  if (updates.status !== undefined) task.status = updates.status;
+  if (updates.priority !== undefined) task.priority = updates.priority;
+  if (updates.assignedTo !== undefined)
+    task.assignedTo = updates.assignedTo
+      ? new mongoose.Types.ObjectId(updates.assignedTo)
+      : null;
+
+  await task.save();
+
+  return task;
+}
