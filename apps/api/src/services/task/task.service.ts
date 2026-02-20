@@ -38,3 +38,23 @@ export async function listTasks(input: ListTasksInput) {
     workspaceId: new mongoose.Types.ObjectId(workspaceId),
   }).sort({ createdAt: -1 });
 }
+
+interface GetTaskInput {
+  workspaceId: string;
+  taskId: string;
+}
+
+export async function getTaskById(input: GetTaskInput) {
+  const { workspaceId, taskId } = input;
+
+  const task = await TaskModel.findOne({
+    _id: taskId,
+    workspaceId: new mongoose.Types.ObjectId(workspaceId),
+  });
+
+  if (!task) {
+    throw new NotFoundError("Task not found");
+  }
+
+  return task;
+}
