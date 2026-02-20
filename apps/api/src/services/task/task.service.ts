@@ -87,7 +87,7 @@ export async function updateTask(input: UpdateTaskInput) {
 
   // MEMBER cannot assign
   if (updates.assignedTo !== undefined && role !== "OWNER") {
-    throw new HttpError(403, "You do not have permission to assign this task");
+    throw new HttpError( "You do not have permission to assign this task",403);
   }
 
   // Apply allowed updates only
@@ -103,4 +103,29 @@ export async function updateTask(input: UpdateTaskInput) {
   await task.save();
 
   return task;
+}
+
+interface DeleteTaskInput {
+  workspaceId: string;
+  role: "OWNER" | "MEMBER";
+  taskId: string;
+}
+
+export async function deleteTask(input: DeleteTaskInput) {
+  const { workspaceId, role, taskId } = input;
+
+  if (role !== "OWNER") {
+    throw new HttpError( "You do not have permission to delete this task",403);
+  }
+
+  const result = await TaskModel.findOneAndDelete({
+    _id: taskId,
+    workspaceId: new mongoose.Types.ObjectId(workspaceId),
+  });
+
+  if (!result) {
+    throw new NotFoundError("Task not found");
+  }
+
+  return;
 }
