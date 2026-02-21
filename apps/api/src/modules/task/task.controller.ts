@@ -96,3 +96,25 @@ export async function updateTaskController(
   }
 }
 
+
+
+export async function deleteTaskController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { workspace, role } = req.context;
+    const { id } = req.params;
+
+    await taskService.deleteTask({
+      workspaceId: workspace.id,
+      role,
+      taskId: id,
+    });
+
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+}
