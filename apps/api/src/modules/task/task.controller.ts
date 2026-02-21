@@ -72,3 +72,27 @@ export async function getTaskController(
 }
 
 
+
+export async function updateTaskController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { workspace, user, role } = req.context;
+    const { id } = req.params;
+
+    const task = await taskService.updateTask({
+      workspaceId: workspace.id,
+      userId: user.id,
+      role,
+      taskId: id,
+      updates: req.body,
+    });
+
+    res.json(task);
+  } catch (err) {
+    next(err);
+  }
+}
+
