@@ -11,14 +11,14 @@ export async function createTaskController(
     const { title, description, priority } = req.body;
 
     if (!title) {
-      throw new HttpError( "Title is required",401);
+      throw new HttpError("Title is required", 400);
     }
 
     const { workspace, user, role } = req.context;
 
     const task = await taskService.createTask({
-      workspaceId: workspace.id,
-      userId: user.id,
+      workspaceId:workspace.id,
+      userId: user.id,     // ✅ correct
       role,
       title,
       description,
@@ -26,6 +26,26 @@ export async function createTaskController(
     });
 
     res.status(201).json(task);
+  } catch (err) {
+    next(err);
+  }
+}
+
+
+export async function listTasksController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { workspace, role } = req.context;
+
+    const tasks = await taskService.listTasks({
+      workspaceId: workspace.id,
+      role,
+    });
+
+    res.json(tasks);
   } catch (err) {
     next(err);
   }
