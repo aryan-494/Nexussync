@@ -51,4 +51,24 @@ export async function listTasksController(
   }
 }
 
+export async function getTaskController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { workspace } = req.context;
+    const { id } = req.params;
+
+    const task = await taskService.getTaskById({
+      workspaceId: workspace.id,
+      taskId: id,
+    });
+
+    res.json(task);
+  } catch (err) {
+    next(err);
+  }
+}
+
 
