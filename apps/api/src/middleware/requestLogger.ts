@@ -1,24 +1,24 @@
 import type { Request, Response, NextFunction } from "express";
+import { randomUUID } from "crypto";
 
-export function requestLogger(
+export function requestContextMiddleware(
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ) {
-  const start = Date.now();
-  const requestId = req.context?.requestId;
-
-  console.log(
-    `[request:start] ${req.method} ${req.path} requestId=${requestId}`
-  );
-
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-
-    console.log(
-      `[request:end] ${req.method} ${req.path} status=${res.statusCode} duration=${duration}ms requestId=${requestId}`
-    );
-  });
+  // Initialize base context
+  req.context = {
+    requestId: randomUUID(),
+    user: {
+      id: "",        // will be filled by auth middleware
+      email: "",
+    },
+    workspace: {
+      id: "",        // will be filled by workspace middleware
+      slug: "",
+    },
+    role: "MEMBER",  // temporary default, overwritten later
+  };
 
   next();
 }
