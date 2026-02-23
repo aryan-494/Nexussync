@@ -3,6 +3,7 @@ import { healthHandler } from "./health";
 import authRouter from "./auth";
 import protectedRouter from "./protected";
 import workspaceRouter from "./workspace.routes";
+  import taskRoutes from "./tasks";
 
 export function v1Router() {
   const router = Router();
@@ -18,6 +19,10 @@ export function v1Router() {
 
   // Workspace-scoped routes (auth + workspace context inside)
   router.use("/workspaces", workspaceRouter);
+
+
+
+router.use("/tasks", taskRoutes);
 
   return router;
 }

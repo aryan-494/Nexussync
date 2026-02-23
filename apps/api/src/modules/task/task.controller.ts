@@ -1,7 +1,29 @@
+// contextMiddleware
+// → authMiddleware
+// → workspaceMiddleware
+// → controller (narrow context)
+// → service (enforce business rules)
+
 import { Request, Response, NextFunction } from "express";
 import * as taskService from "../../services/task/task.service";
 import { HttpError } from "../../errors";
 
+/**
+ * Utility to safely extract fully-built context
+ */
+function requireFullContext(req: Request) {
+  const { user, workspace, role } = req.context;
+
+  if (!user || !workspace || !role) {
+    throw new HttpError("Invalid request context", 500);
+  }
+
+  return { user, workspace, role };
+}
+
+/**
+ * Create Task
+ */
 export async function createTaskController(
   req: Request,
   res: Response,
@@ -14,11 +36,11 @@ export async function createTaskController(
       throw new HttpError("Title is required", 400);
     }
 
-    const { workspace, user, role } = req.context;
+    const { user, workspace, role } = requireFullContext(req);
 
     const task = await taskService.createTask({
-      workspaceId:workspace.id,
-      userId: user.id,     // ✅ correct
+      workspaceId: workspace.id,
+      userId: user.id,
       role,
       title,
       description,
@@ -31,14 +53,16 @@ export async function createTaskController(
   }
 }
 
-
+/**
+ * List Tasks
+ */
 export async function listTasksController(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
   try {
-    const { workspace, role } = req.context;
+    const { workspace, role } = requireFullContext(req);
 
     const tasks = await taskService.listTasks({
       workspaceId: workspace.id,
@@ -51,14 +75,21 @@ export async function listTasksController(
   }
 }
 
+/**
+ * Get Task By ID
+ */
 export async function getTaskController(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
   try {
-    const { workspace } = req.context;
+    const { workspace } = requireFullContext(req);
     const { id } = req.params;
+     if (!id) {
+      throw new HttpError("Task ID is required", 400);
+    }
+
 
     const task = await taskService.getTaskById({
       workspaceId: workspace.id,
@@ -71,16 +102,21 @@ export async function getTaskController(
   }
 }
 
-
-
+/**
+ * Update Task
+ */
 export async function updateTaskController(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
   try {
-    const { workspace, user, role } = req.context;
+    const { user, workspace, role } = requireFullContext(req);
     const { id } = req.params;
+     if (!id) {
+      throw new HttpError("Task ID is required", 400);
+    }
+
 
     const task = await taskService.updateTask({
       workspaceId: workspace.id,
@@ -96,15 +132,16 @@ export async function updateTaskController(
   }
 }
 
-
-
+/**
+ * Delete Task
+ */
 export async function deleteTaskController(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
   try {
-    const { workspace, role } = req.context;
+    const { workspace, role } = requireFullContext(req);
     const { id } = req.params;
 
     await taskService.deleteTask({

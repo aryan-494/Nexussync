@@ -24,9 +24,6 @@ export function createRequestContext(): RequestContext {
   };
 }
 
-/**
- * Attach context to every request
- */
 export function contextMiddleware(
   req: Request,
   _res: Response,
@@ -35,4 +32,3 @@ export function contextMiddleware(
   req.context = createRequestContext();
   next();
 }
-
