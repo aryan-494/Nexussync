@@ -7,7 +7,7 @@ import { requireWorkspaceRole } from "../../middleware/authorization.middleware"
 import { createWorkspaceController } from "../../modules/workspace/workspace.controller";
 import { listUserWorkspacesController } from "../../modules/workspace/listUserWorkspaces.controller";
 import { addWorkspaceMemberController } from "../../modules/workspace/addWorkspaceMember.controller";
-//import { removeWorkspaceMemberController } from "../../modules/workspace/removeWorkspaceMember.controller";
+import { removeWorkspaceMemberController } from "../../modules/workspace/removeWorkspaceMember.controller";
 
 const router = Router();
 
@@ -48,7 +48,7 @@ router.delete(
   authMiddleware,
   workspaceContextMiddleware,
   requireWorkspaceRole("OWNER"),
- // removeWorkspaceMemberController
+  removeWorkspaceMemberController
 );
 
 export default router;
