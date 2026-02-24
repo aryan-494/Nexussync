@@ -3,8 +3,8 @@ import { Router } from "express";
 import { authMiddleware } from "../../middleware/auth.middleware";
 import { workspaceContextMiddleware } from "../../middleware/workspaceContext.middleware";
 import { requireWorkspaceRole } from "../../middleware/authorization.middleware";
-import { createWorkspaceController } from "../../services/workspace/workspace.controller";
-import { listUserWorkspaces } from "../../services/workspace/listUserWorkspaces";
+import { createWorkspaceController } from "../../modules/workspace/workspace.controller";
+import { listUserWorkspacesController } from "../../modules/workspace/listUserWorkspaces.controller";
 import { addWorkspaceMember } from "../../services/workspace/addWorkspaceMember";
 import { removeWorkspaceMember } from "../../services/workspace/removeWorkspaceMember"; 
 
@@ -27,7 +27,7 @@ router.post(
 router.get(
   "/",
   authMiddleware,
-  listUserWorkspaces
+  listUserWorkspacesController
 );
 
 /**

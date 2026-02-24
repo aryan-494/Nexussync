@@ -3,7 +3,7 @@ import { WorkspaceMemberModel } from "../../db/models/workspaceMember.model";
 import { WorkspaceModel } from "../../db/models/workspace.model";
 
 interface ListUserWorkspacesInput{
-    userId:mongoose.Types.ObjectId;
+    userId:string;
 }
 
 interface UserWorkspace {
