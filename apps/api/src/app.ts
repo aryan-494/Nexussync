@@ -9,6 +9,7 @@ import { HttpError, NotFoundError } from "./errors";
 
 export function createApp() {
   const app = express();
+   app.use(express.json());
 
   /* -----------------------------
      CORS (MUST BE FIRST)
@@ -29,7 +30,7 @@ app.options(/.*/, cors());
   /* -----------------------------
      Core middleware
   ------------------------------ */
-  app.use(express.json());
+ // app.use(express.json());
   app.use(cookieParser());
 
   app.use(contextMiddleware);

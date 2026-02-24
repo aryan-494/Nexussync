@@ -1,6 +1,7 @@
-import { Schema, model } from "mongoose";
+import { Schema, model, Types } from "mongoose";
 
 export interface User {
+  _id: Types.ObjectId; // ✅ important
   email: string;
   passwordHash: string;
   status: "ACTIVE" | "DISABLED";
@@ -8,14 +9,15 @@ export interface User {
 
 const userSchema = new Schema(
   {
-    email: { 
+    email: {
       type: String,
-       required: true,
-        unique: true
-       },
+      required: true,
+      unique: true,
+    },
     passwordHash: {
-       type: String,
-       required: true },
+      type: String,
+      required: true,
+    },
     status: {
       type: String,
       enum: ["ACTIVE", "DISABLED"],
@@ -23,7 +25,7 @@ const userSchema = new Schema(
     },
   },
   {
-    timestamps: true, // ✅ THIS IS THE KEY
+    timestamps: true,
   }
 );
 
