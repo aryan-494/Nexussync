@@ -5,7 +5,7 @@ export type WorkspaceRole = "OWNER" | "MEMBER";
 export interface WorkspaceMember {
   _id: Types.ObjectId;
   workspaceId: Types.ObjectId;
-  userId: Types.ObjectId;
+  userId: string;
   role: WorkspaceRole;
   createdAt: Date;
   updatedAt: Date;
@@ -19,7 +19,7 @@ const workspaceMemberSchema = new Schema<WorkspaceMember>(
       required: true,
     },
     userId: {
-      type: Schema.Types.ObjectId,
+      type: String, // ← FIXED
       required: true,
     },
     role: {
@@ -33,13 +33,6 @@ const workspaceMemberSchema = new Schema<WorkspaceMember>(
     versionKey: false,
   }
 );
-
-// Prevent duplicate membership
-workspaceMemberSchema.index(
-  { workspaceId: 1, userId: 1 },
-  { unique: true }
-);
-
 export const WorkspaceMemberModel = model<WorkspaceMember>(
   "WorkspaceMember",
   workspaceMemberSchema,

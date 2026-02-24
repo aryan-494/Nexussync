@@ -64,16 +64,20 @@ export async function createWorkspace(
     // 4️⃣ Return plain object
     return workspace[0].toObject();
 
-  } catch (error: any) {
+  } 
     // Abort transaction on ANY failure
-    await session.abortTransaction();
+    catch (error: any) {
+  await session.abortTransaction();
 
-    if (error?.code === 11000) {
-      throw new HttpError("Workspace slug already exists", 409);
-    }
+  console.error("====== WORKSPACE CREATE ERROR ======");
+  console.error(error);
+  console.error("=====================================");
 
-    throw new HttpError("Failed to create workspace", 500);
-  } finally {
-    session.endSession();
+  if (error?.code === 11000) {
+    throw new HttpError("Workspace slug already exists", 409);
   }
+
+  throw new HttpError("Failed to create workspace", 500);
 }
+}
+

@@ -18,7 +18,7 @@ router.post(
   "/",
   authMiddleware,
   createWorkspace
-);
+);;
 
 /**
  * List my workspaces
