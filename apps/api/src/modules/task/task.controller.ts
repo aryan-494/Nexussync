@@ -35,6 +35,7 @@ export async function createTaskController(
     if (!title) {
       throw new HttpError("Title is required", 400);
     }
+    console.log("CONTEXT DEBUG:", req.context);
 
     const { user, workspace, role } = requireFullContext(req);
 
@@ -62,19 +63,25 @@ export async function listTasksController(
   next: NextFunction
 ) {
   try {
+    
+
     const { workspace, role } = requireFullContext(req);
 
+   
     const tasks = await taskService.listTasks({
       workspaceId: workspace.id,
       role,
     });
 
+    
+
     res.json(tasks);
+
   } catch (err) {
+    
     next(err);
   }
 }
-
 /**
  * Get Task By ID
  */

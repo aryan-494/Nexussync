@@ -5,8 +5,9 @@
 // DELETE /api/v1/tasks/:id
 
 import { Router } from "express";
+
 import { authMiddleware } from "../../middleware/auth.middleware";
-import { workspaceContextMiddleware  } from "../../middleware/workspaceContext.middleware";
+import { workspaceContextMiddleware } from "../../middleware/workspaceContext.middleware";
 import { requireWorkspaceRole } from "../../middleware/authorization.middleware";
 
 import {
@@ -20,38 +21,38 @@ import {
 const router = Router();
 
 /**
- * All task routes require:
- * - Auth
- * - Workspace context
+ * Middleware order:
+ * Auth → Workspace Context → Controllers
  */
 router.use(authMiddleware);
-router.use(workspaceContextMiddleware);
 
-/**
- * Create Task
- */
-router.post("/", createTaskController);
+router.post(
+  "/:slug",
+  workspaceContextMiddleware,
+  createTaskController
+);
 
-/**
- * List Tasks
- */
-router.get("/", listTasksController);
+router.get(
+  "/:slug",
+  workspaceContextMiddleware,
+  listTasksController
+);
 
-/**
- * Get Task By ID
- */
-router.get("/:id", getTaskController);
+router.get(
+  "/:slug/:id",
+  workspaceContextMiddleware,
+  getTaskController
+);
 
-/**
- * Update Task
- */
-router.patch("/:id", updateTaskController);
+router.patch(
+  "/:slug/:id",
+  workspaceContextMiddleware,
+  updateTaskController
+);
 
-/**
- * Delete Task (OWNER only)
- */
 router.delete(
-  "/:id",
+  "/:slug/:id",
+  workspaceContextMiddleware,
   requireWorkspaceRole("OWNER"),
   deleteTaskController
 );

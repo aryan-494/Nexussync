@@ -23,22 +23,25 @@ export function authMiddleware(
     throw new HttpError("Authentication required", 401);
   }
 
-  try {
-    const payload = jwt.verify(
-      token,
-      config.auth.jwtSecret
-    ) as jwt.JwtPayload;
+ try {
+  const payload = jwt.verify(
+    token,
+    config.auth.jwtSecret
+  ) as jwt.JwtPayload;
 
-    req.auth = {
-      userId: payload.sub as string,
-      email: payload.email as string,
-    };
+  req.auth = {
+    userId: payload.sub as string,
+    email: payload.email as string,
+  };
 
-    next();
-  } catch {
-    throw new HttpError("Invalid or expired session", 401);
-  }
+  // ✅ ADD THIS (Critical for Phase-4)
+  req.context.user = {
+    id: payload.sub as string,
+    email: payload.email as string,
+  };
+
+  next();
+} catch {
+  throw new HttpError("Invalid or expired session", 401);
 }
-
-
-
+}

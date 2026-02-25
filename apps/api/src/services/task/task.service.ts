@@ -34,15 +34,14 @@ interface ListTasksInput {
 export async function listTasks(input: ListTasksInput) {
   const { workspaceId } = input;
 
-  return TaskModel.find({
+  const tasks = await TaskModel.find({
     workspaceId: new mongoose.Types.ObjectId(workspaceId),
-  }).sort({ createdAt: -1 });
-}
+  })
+  .sort({ createdAt: -1 })
+  .lean();
 
-interface GetTaskInput {
-  workspaceId: string;
-  taskId: string;
-}
+  return tasks;
+};
 
 export async function getTaskById(input: GetTaskInput) {
   const { workspaceId, taskId } = input;
