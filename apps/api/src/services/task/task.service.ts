@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { TaskModel, TaskStatus, TaskPriority } from "../../db/models/task.model";
 import { NotFoundError, HttpError } from "../../errors";
+import { WorkspaceMemberModel } from "../../db/models/workspaceMember.model";
 
 interface CreateTaskInput {
   workspaceId: string;
@@ -31,6 +32,15 @@ interface ListTasksInput {
   role: "OWNER" | "MEMBER";
 }
 
+
+
+
+
+
+
+
+
+
 export async function listTasks(input: ListTasksInput) {
   const { workspaceId } = input;
 
@@ -43,20 +53,29 @@ export async function listTasks(input: ListTasksInput) {
   return tasks;
 };
 
+
 export async function getTaskById(input: GetTaskInput) {
+
+  if (!mongoose.Types.ObjectId.isValid(input.taskId)) {
+    throw new HttpError("Task not found", 404);
+  }
+
   const { workspaceId, taskId } = input;
 
   const task = await TaskModel.findOne({
-    _id: taskId,
+    _id: new mongoose.Types.ObjectId(taskId),
     workspaceId: new mongoose.Types.ObjectId(workspaceId),
   });
 
   if (!task) {
-    throw new NotFoundError("Task not found");
+    throw new HttpError("Task not found", 404);
   }
 
   return task;
 }
+
+
+
 
 interface UpdateTaskInput {
   workspaceId: string;
@@ -71,38 +90,82 @@ interface UpdateTaskInput {
     assignedTo?: string | null;
   };
 }
-
 export async function updateTask(input: UpdateTaskInput) {
-  const { workspaceId, role, taskId, updates } = input;
+
+  // Fix 2 — TaskId validation
+  if (!mongoose.Types.ObjectId.isValid(input.taskId)) {
+    throw new HttpError("Task not found", 404);
+  }
+
+  const { workspaceId, taskId, role, updates } = input;
 
   const task = await TaskModel.findOne({
-    _id: taskId,
+    _id: new mongoose.Types.ObjectId(taskId),
     workspaceId: new mongoose.Types.ObjectId(workspaceId),
   });
 
   if (!task) {
-    throw new NotFoundError("Task not found");
+    throw new HttpError("Task not found", 404);
   }
 
-  // MEMBER cannot assign
-  if (updates.assignedTo !== undefined && role !== "OWNER") {
-    throw new HttpError( "You do not have permission to assign this task",403);
+
+  // Fix 3 — Whitelist
+
+  const allowedFields = [
+    "title",
+    "description",
+    "status",
+    "priority",
+    "assignedTo"
+  ];
+
+  const filteredUpdates: Record<string, any> = {};
+
+  for (const key of allowedFields) {
+    if (key in updates) {
+      filteredUpdates[key] = updates[key];
+    }
   }
 
-  // Apply allowed updates only
-  if (updates.title !== undefined) task.title = updates.title;
-  if (updates.description !== undefined) task.description = updates.description;
-  if (updates.status !== undefined) task.status = updates.status;
-  if (updates.priority !== undefined) task.priority = updates.priority;
-  if (updates.assignedTo !== undefined)
-    task.assignedTo = updates.assignedTo
-      ? new mongoose.Types.ObjectId(updates.assignedTo)
-      : null;
+
+  // Fix 4 — Assigned User Validation
+
+  if (filteredUpdates.assignedTo) {
+
+    if (!mongoose.Types.ObjectId.isValid(filteredUpdates.assignedTo)) {
+      throw new HttpError("Invalid assigned user", 400);
+    }
+
+    const member = await WorkspaceMemberModel.findOne({
+      workspaceId: new mongoose.Types.ObjectId(workspaceId),
+      userId: new mongoose.Types.ObjectId(filteredUpdates.assignedTo),
+    });
+
+    if (!member) {
+      throw new HttpError(
+        "Assigned user must belong to workspace",
+        400
+      );
+    }
+  }
+
+
+  task.set(filteredUpdates);
 
   await task.save();
 
   return task;
 }
+
+
+
+
+
+
+
+
+
+
 
 interface DeleteTaskInput {
   workspaceId: string;
@@ -111,20 +174,28 @@ interface DeleteTaskInput {
 }
 
 export async function deleteTask(input: DeleteTaskInput) {
-  const { workspaceId, role, taskId } = input;
 
-  if (role !== "OWNER") {
-    throw new HttpError( "You do not have permission to delete this task",403);
+  if (!mongoose.Types.ObjectId.isValid(input.taskId)) {
+    throw new HttpError("Task not found", 404);
   }
 
-  const result = await TaskModel.findOneAndDelete({
-    _id: taskId,
+  const { workspaceId, taskId, role } = input;
+
+  if (role !== "OWNER") {
+    throw new HttpError(
+      "You do not have permission to delete this task",
+      403
+    );
+  }
+
+  const task = await TaskModel.findOne({
+    _id: new mongoose.Types.ObjectId(taskId),
     workspaceId: new mongoose.Types.ObjectId(workspaceId),
   });
 
-  if (!result) {
-    throw new NotFoundError("Task not found");
+  if (!task) {
+    throw new HttpError("Task not found", 404);
   }
 
-  return;
+  await task.deleteOne();
 }
