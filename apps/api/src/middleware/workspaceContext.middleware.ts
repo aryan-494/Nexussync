@@ -12,20 +12,26 @@ export async function workspaceContextMiddleware(
     // 1️⃣ Workspace identifier (from route param)
     const slugParam = req.params.slug;
 
-if (typeof slugParam !== "string" || !slugParam.trim()) {
-  return next(new HttpError("Workspace slug is required", 400));
-}
-
-const slug = slugParam.toLowerCase();
-
-    if (!slug) {
-      return next(new HttpError("Workspace slug is required", 400));
+    if (typeof slugParam !== "string" || !slugParam.trim()) {
+      return next(
+        new HttpError(
+          "Workspace slug is required",
+          400,
+          "WORKSPACE_SLUG_REQUIRED"
+        )
+      );
     }
+
+    const slug = slugParam.toLowerCase();
 
     // 2️⃣ Ensure request context exists
     if (!req.context) {
       return next(
-        new HttpError("Request context not initialized", 500)
+        new HttpError(
+          "Request context not initialized",
+          500,
+          "INTERNAL_ERROR"
+        )
       );
     }
 
@@ -36,12 +42,24 @@ const slug = slugParam.toLowerCase();
     }).lean();
 
     if (!workspace) {
-      return next(new HttpError("Workspace not found", 404));
+      return next(
+        new HttpError(
+          "Workspace not found",
+          404,
+          "WORKSPACE_NOT_FOUND"
+        )
+      );
     }
 
     // 4️⃣ Ensure authenticated user exists
     if (!req.auth?.userId) {
-      return next(new HttpError("Unauthorized", 401));
+      return next(
+        new HttpError(
+          "Unauthorized",
+          401,
+          "AUTH_UNAUTHORIZED"
+        )
+      );
     }
 
     // 5️⃣ Resolve membership
@@ -52,7 +70,11 @@ const slug = slugParam.toLowerCase();
 
     if (!membership) {
       return next(
-        new HttpError("You do not have access to this workspace", 403)
+        new HttpError(
+          "You do not have access to this workspace",
+          403,
+          "NOT_WORKSPACE_MEMBER"
+        )
       );
     }
 

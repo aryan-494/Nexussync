@@ -15,14 +15,22 @@ export function requireWorkspaceRole(requiredRole: WorkspaceRole) {
     // 1️⃣ Context must exist
     if (!req.context) {
       return next(
-        new HttpError("Request context not initialized", 500)
+        new HttpError(
+          "Request context not initialized",
+          500,
+          "INTERNAL_ERROR"
+        )
       );
     }
 
     // 2️⃣ Workspace must exist
     if (!req.context.workspace) {
       return next(
-        new HttpError("Workspace context missing", 500)
+        new HttpError(
+          "Workspace context missing",
+          500,
+          "INTERNAL_ERROR"
+        )
       );
     }
 
@@ -30,7 +38,11 @@ export function requireWorkspaceRole(requiredRole: WorkspaceRole) {
     const userRole = req.context.role;
     if (!userRole) {
       return next(
-        new HttpError("Workspace role missing", 500)
+        new HttpError(
+          "Workspace role missing",
+          500,
+          "INTERNAL_ERROR"
+        )
       );
     }
 
@@ -39,7 +51,8 @@ export function requireWorkspaceRole(requiredRole: WorkspaceRole) {
       return next(
         new HttpError(
           "You do not have permission to perform this action",
-          403
+          403,
+          "FORBIDDEN_WORKSPACE_ACTION"
         )
       );
     }

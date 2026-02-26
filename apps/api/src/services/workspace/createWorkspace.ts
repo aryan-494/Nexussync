@@ -3,12 +3,6 @@ import { WorkspaceModel } from "../../db/models/workspace.model";
 import { WorkspaceMemberModel } from "../../db/models/workspaceMember.model";
 import { HttpError } from "../../errors";
 
-/**
- * Very small helper:
- * - lowercase
- * - replace spaces with -
- * - remove unsafe chars
- */
 function generateSlug(name: string): string {
   return name
     .toLowerCase()
@@ -19,7 +13,7 @@ function generateSlug(name: string): string {
 
 interface CreateWorkspaceInput {
   name: string;
-  createdBy: string; // userId
+  createdBy: string;
 }
 
 export async function createWorkspace(
@@ -32,7 +26,6 @@ export async function createWorkspace(
 
     const slug = generateSlug(input.name);
 
-    // 1️⃣ Create workspace
     const workspace = await WorkspaceModel.create(
       [
         {
@@ -46,7 +39,6 @@ export async function createWorkspace(
 
     const workspaceId = workspace[0]._id;
 
-    // 2️⃣ Create OWNER membership
     await WorkspaceMemberModel.create(
       [
         {
@@ -58,26 +50,26 @@ export async function createWorkspace(
       { session }
     );
 
-    // 3️⃣ Commit transaction
     await session.commitTransaction();
 
-    // 4️⃣ Return plain object
     return workspace[0].toObject();
 
-  } 
-    // Abort transaction on ANY failure
-    catch (error: any) {
-  await session.abortTransaction();
+  } catch (error: any) {
 
-  console.error("====== WORKSPACE CREATE ERROR ======");
-  console.error(error);
-  console.error("=====================================");
+    await session.abortTransaction();
 
-  if (error?.code === 11000) {
-    throw new HttpError("Workspace slug already exists", 409);
+    if (error?.code === 11000) {
+      throw new HttpError(
+        "Workspace slug already exists",
+        409,
+        "VALIDATION_ERROR"
+      );
+    }
+
+    throw new HttpError(
+      "Failed to create workspace",
+      500,
+      "INTERNAL_ERROR"
+    );
   }
-
-  throw new HttpError("Failed to create workspace", 500);
 }
-}
-

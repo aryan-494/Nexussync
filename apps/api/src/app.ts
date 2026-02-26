@@ -52,29 +52,38 @@ app.options(/.*/, cors());
      Global error handler
   ------------------------------ */
   app.use(
-    (
-      err: unknown,
-      req: express.Request,
-      res: express.Response,
-      _next: express.NextFunction
-    ) => {
-      const requestId = req.context?.requestId;
+  (
+    err: unknown,
+    req: express.Request,
+    res: express.Response,
+    _next: express.NextFunction
+  ) => {
 
-      if (err instanceof HttpError) {
-        return res.status(err.statusCode).json({
-          error: err.message,
-          requestId,
-        });
-      }
+    const requestId = req.context?.requestId;
 
-      console.error(err);
-
-      return res.status(500).json({
-        error: "Internal Server Error",
+    // Known HttpError
+    if (err instanceof HttpError) {
+      return res.status(err.statusCode).json({
+        error: {
+          message: err.message,
+          code: err.code,
+        },
         requestId,
       });
     }
-  );
+
+    // Unknown errors
+    console.error(err);
+
+    return res.status(500).json({
+      error: {
+        message: "Internal Server Error",
+        code: "INTERNAL_ERROR",
+      },
+      requestId,
+    });
+  }
+);
 
   return app;
 }

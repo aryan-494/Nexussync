@@ -9,7 +9,11 @@ export async function listUserWorkspacesController(
 ) {
   try {
     if (!req.auth?.userId) {
-      throw new HttpError("Unauthorized", 401);
+      throw new HttpError(
+        "Unauthorized",
+        401,
+        "AUTH_UNAUTHORIZED"
+      );
     }
 
     const workspaces = await listUserWorkspaces({

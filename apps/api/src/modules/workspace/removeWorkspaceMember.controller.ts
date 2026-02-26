@@ -8,32 +8,30 @@ export async function removeWorkspaceMemberController(
   next: NextFunction
 ) {
   try {
-
-    // Workspace from context middleware
     const workspaceId = req.context?.workspace?.id;
 
     if (!workspaceId) {
       throw new HttpError(
         "Workspace context missing",
-        500
+        500,
+        "INTERNAL_ERROR"
       );
     }
 
-    // UserId from URL param
     const userId = req.params.userId;
 
     if (!userId) {
       throw new HttpError(
         "UserId is required",
-        400
+        400,
+        "VALIDATION_ERROR"
       );
     }
 
-    const result =
-      await removeWorkspaceMember({
-        workspaceId,
-        userId,
-      });
+    const result = await removeWorkspaceMember({
+      workspaceId,
+      userId,
+    });
 
     res.json(result);
 

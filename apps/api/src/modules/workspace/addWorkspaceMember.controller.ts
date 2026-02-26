@@ -9,29 +9,34 @@ export async function addWorkspaceMemberController(
   next: NextFunction
 ) {
   try {
-
     const emailRaw = req.body.email;
 
     if (!emailRaw) {
-      throw new HttpError("Email is required", 400);
+      throw new HttpError(
+        "Email is required",
+        400,
+        "VALIDATION_ERROR"
+      );
     }
 
     if (!req.context?.workspace) {
-      throw new HttpError("Workspace context missing", 500);
+      throw new HttpError(
+        "Workspace context missing",
+        500,
+        "INTERNAL_ERROR"
+      );
     }
 
-   
+    const workspaceId = new mongoose.Types.ObjectId(
+      req.context.workspace.id
+    );
 
-   const workspaceId = new mongoose.Types.ObjectId(
-  req.context.workspace.id
-);
+    const email = emailRaw;
 
-const email = req.body.email;
-
-const result = await addWorkspaceMember({
-  workspaceId,
-  email,
-});
+    const result = await addWorkspaceMember({
+      workspaceId,
+      email,
+    });
 
     res.status(201).json(result);
 

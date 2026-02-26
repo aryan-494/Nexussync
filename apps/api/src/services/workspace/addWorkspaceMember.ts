@@ -13,38 +13,40 @@ export async function addWorkspaceMember(
 ) {
   try {
 
-    // 1️⃣ Find user
     const user = await UserModel.findOne({
       email: input.email.toLowerCase(),
     });
-    console.log("USER DEBUG:", user);
-console.log("USER ID DEBUG:", user?._id);
 
     if (!user) {
-      throw new HttpError("User not found", 404);
+      throw new HttpError(
+        "User not found",
+        404,
+        "NOT_FOUND"
+      );
     }
 
-    // 2️⃣ Create membership
     const membership = await WorkspaceMemberModel.create({
-  workspaceId: input.workspaceId,
-  userId: user._id, // ✅ No error now
-  role: "MEMBER",
-});
+      workspaceId: input.workspaceId,
+      userId: user._id,
+      role: "MEMBER",
+    });
 
-    return membership; // ✅ No error
+    return membership;
 
   } catch (error: any) {
 
     if (error?.code === 11000) {
       throw new HttpError(
         "User is already a member",
-        409
+        409,
+        "VALIDATION_ERROR"
       );
     }
 
     throw new HttpError(
       "Failed to add workspace member",
-      500
+      500,
+      "INTERNAL_ERROR"
     );
   }
 }

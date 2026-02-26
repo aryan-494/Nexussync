@@ -21,28 +21,35 @@ export async function loginUser(
 ): Promise<LoginResult> {
   const config = loadConfig();
 
-  // 1️⃣ Normalize email
   const normalizedEmail = email.trim().toLowerCase();
-
-  // 2️⃣ Find user (Mongoose document / lean object)
   const user = await findUserByEmail(normalizedEmail);
 
   if (!user) {
-    throw new HttpError("Invalid credentials", 401);
+    throw new HttpError(
+      "Invalid credentials",
+      401,
+      "AUTH_INVALID_CREDENTIALS"
+    );
   }
 
-  // 3️⃣ Check user status (aligned with schema)
   if (user.status !== "ACTIVE") {
-    throw new HttpError("User account is disabled", 403);
+    throw new HttpError(
+      "User account is disabled",
+      403,
+      "AUTH_UNAUTHORIZED"
+    );
   }
 
-  // 4️⃣ Verify password
   const isValid = await bcrypt.compare(password, user.passwordHash);
+
   if (!isValid) {
-    throw new HttpError("Invalid credentials", 401);
+    throw new HttpError(
+      "Invalid credentials",
+      401,
+      "AUTH_INVALID_CREDENTIALS"
+    );
   }
 
-  // 5️⃣ Generate JWTs (Mongo _id is the identity)
   const userId = user._id.toString();
 
   const accessToken = jwt.sign(
@@ -62,7 +69,6 @@ export async function loginUser(
     { expiresIn: "7d" }
   );
 
-  // 6️⃣ Return safe user data
   return {
     accessToken,
     refreshToken,
@@ -84,23 +90,36 @@ export async function refreshAccessToken(refreshToken: string) {
       refreshToken,
       config.auth.jwtSecret
     ) as jwt.JwtPayload;
-  } catch {
-    throw new HttpError("Invalid refresh token", 401);
+  } catch (err: any) {
+    if (err.name === "TokenExpiredError") {
+      throw new HttpError(
+        "Session expired",
+        401,
+        "AUTH_SESSION_EXPIRED"
+      );
+    }
+
+    throw new HttpError(
+      "Invalid refresh token",
+      401,
+      "AUTH_INVALID_TOKEN"
+    );
   }
 
   if (!payload.sub) {
-    throw new HttpError("Invalid refresh token payload", 401);
+    throw new HttpError(
+      "Invalid refresh token payload",
+      401,
+      "AUTH_INVALID_TOKEN"
+    );
   }
 
-  // Issue new access token
   const newAccessToken = jwt.sign(
     {
-      sub: payload.sub, // Mongo userId
+      sub: payload.sub,
     },
     config.auth.jwtSecret,
-    {
-      expiresIn: "15m",
-    }
+    { expiresIn: "15m" }
   );
 
   return newAccessToken;

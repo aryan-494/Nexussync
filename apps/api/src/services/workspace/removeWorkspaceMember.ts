@@ -15,15 +15,14 @@ export async function removeWorkspaceMember(
       workspaceId: new mongoose.Types.ObjectId(
         input.workspaceId
       ),
-
-      // userId stored as STRING in DB
       userId: input.userId,
     });
 
   if (!membership) {
     throw new HttpError(
       "Membership not found",
-      404
+      404,
+      "NOT_WORKSPACE_MEMBER"
     );
   }
 

@@ -20,28 +20,46 @@ export function authMiddleware(
   }
 
   if (!token) {
-    throw new HttpError("Authentication required", 401);
+    throw new HttpError(
+      "Authentication required",
+      401,
+      "AUTH_UNAUTHORIZED"
+    );
   }
 
- try {
-  const payload = jwt.verify(
-    token,
-    config.auth.jwtSecret
-  ) as jwt.JwtPayload;
+  try {
+    const payload = jwt.verify(
+      token,
+      config.auth.jwtSecret
+    ) as jwt.JwtPayload;
 
-  req.auth = {
-    userId: payload.sub as string,
-    email: payload.email as string,
-  };
+    req.auth = {
+      userId: payload.sub as string,
+      email: payload.email as string,
+    };
 
-  // ✅ ADD THIS (Critical for Phase-4)
-  req.context.user = {
-    id: payload.sub as string,
-    email: payload.email as string,
-  };
+    // ✅ Phase-4 requirement
+    req.context.user = {
+      id: payload.sub as string,
+      email: payload.email as string,
+    };
 
-  next();
-} catch {
-  throw new HttpError("Invalid or expired session", 401);
-}
+    next();
+
+  } catch (err: any) {
+
+    if (err?.name === "TokenExpiredError") {
+      throw new HttpError(
+        "Session expired",
+        401,
+        "AUTH_SESSION_EXPIRED"
+      );
+    }
+
+    throw new HttpError(
+      "Invalid authentication token",
+      401,
+      "AUTH_INVALID_TOKEN"
+    );
+  }
 }

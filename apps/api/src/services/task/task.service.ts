@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { TaskModel, TaskStatus, TaskPriority } from "../../db/models/task.model";
-import { NotFoundError, HttpError } from "../../errors";
+import { HttpError } from "../../errors";
 import { WorkspaceMemberModel } from "../../db/models/workspaceMember.model";
 
 interface CreateTaskInput {
@@ -32,32 +32,30 @@ interface ListTasksInput {
   role: "OWNER" | "MEMBER";
 }
 
-
-
-
-
-
-
-
-
-
 export async function listTasks(input: ListTasksInput) {
   const { workspaceId } = input;
 
   const tasks = await TaskModel.find({
     workspaceId: new mongoose.Types.ObjectId(workspaceId),
   })
-  .sort({ createdAt: -1 })
-  .lean();
+    .sort({ createdAt: -1 })
+    .lean();
 
   return tasks;
-};
+}
 
+interface GetTaskInput {
+  workspaceId: string;
+  taskId: string;
+}
 
 export async function getTaskById(input: GetTaskInput) {
-
   if (!mongoose.Types.ObjectId.isValid(input.taskId)) {
-    throw new HttpError("Task not found", 404);
+    throw new HttpError(
+      "Task not found",
+      404,
+      "INVALID_TASK_ID"
+    );
   }
 
   const { workspaceId, taskId } = input;
@@ -68,14 +66,15 @@ export async function getTaskById(input: GetTaskInput) {
   });
 
   if (!task) {
-    throw new HttpError("Task not found", 404);
+    throw new HttpError(
+      "Task not found",
+      404,
+      "TASK_NOT_FOUND"
+    );
   }
 
   return task;
 }
-
-
-
 
 interface UpdateTaskInput {
   workspaceId: string;
@@ -90,14 +89,17 @@ interface UpdateTaskInput {
     assignedTo?: string | null;
   };
 }
-export async function updateTask(input: UpdateTaskInput) {
 
-  // Fix 2 — TaskId validation
+export async function updateTask(input: UpdateTaskInput) {
   if (!mongoose.Types.ObjectId.isValid(input.taskId)) {
-    throw new HttpError("Task not found", 404);
+    throw new HttpError(
+      "Task not found",
+      404,
+      "INVALID_TASK_ID"
+    );
   }
 
-  const { workspaceId, taskId, role, updates } = input;
+  const { workspaceId, taskId, updates } = input;
 
   const task = await TaskModel.findOne({
     _id: new mongoose.Types.ObjectId(taskId),
@@ -105,11 +107,12 @@ export async function updateTask(input: UpdateTaskInput) {
   });
 
   if (!task) {
-    throw new HttpError("Task not found", 404);
+    throw new HttpError(
+      "Task not found",
+      404,
+      "TASK_NOT_FOUND"
+    );
   }
-
-
-  // Fix 3 — Whitelist
 
   const allowedFields = [
     "title",
@@ -127,13 +130,13 @@ export async function updateTask(input: UpdateTaskInput) {
     }
   }
 
-
-  // Fix 4 — Assigned User Validation
-
   if (filteredUpdates.assignedTo) {
-
     if (!mongoose.Types.ObjectId.isValid(filteredUpdates.assignedTo)) {
-      throw new HttpError("Invalid assigned user", 400);
+      throw new HttpError(
+        "Invalid assigned user",
+        400,
+        "INVALID_ASSIGNMENT"
+      );
     }
 
     const member = await WorkspaceMemberModel.findOne({
@@ -144,28 +147,17 @@ export async function updateTask(input: UpdateTaskInput) {
     if (!member) {
       throw new HttpError(
         "Assigned user must belong to workspace",
-        400
+        400,
+        "INVALID_ASSIGNMENT"
       );
     }
   }
 
-
   task.set(filteredUpdates);
-
   await task.save();
 
   return task;
 }
-
-
-
-
-
-
-
-
-
-
 
 interface DeleteTaskInput {
   workspaceId: string;
@@ -174,9 +166,12 @@ interface DeleteTaskInput {
 }
 
 export async function deleteTask(input: DeleteTaskInput) {
-
   if (!mongoose.Types.ObjectId.isValid(input.taskId)) {
-    throw new HttpError("Task not found", 404);
+    throw new HttpError(
+      "Task not found",
+      404,
+      "INVALID_TASK_ID"
+    );
   }
 
   const { workspaceId, taskId, role } = input;
@@ -184,7 +179,8 @@ export async function deleteTask(input: DeleteTaskInput) {
   if (role !== "OWNER") {
     throw new HttpError(
       "You do not have permission to delete this task",
-      403
+      403,
+      "FORBIDDEN_DELETE_TASK"
     );
   }
 
@@ -194,7 +190,11 @@ export async function deleteTask(input: DeleteTaskInput) {
   });
 
   if (!task) {
-    throw new HttpError("Task not found", 404);
+    throw new HttpError(
+      "Task not found",
+      404,
+      "TASK_NOT_FOUND"
+    );
   }
 
   await task.deleteOne();
