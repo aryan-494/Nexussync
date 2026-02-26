@@ -94,7 +94,7 @@ export async function updateTask(input: UpdateTaskInput) {
   if (!mongoose.Types.ObjectId.isValid(input.taskId)) {
     throw new HttpError(
       "Task not found",
-      404,
+      400,
       "INVALID_TASK_ID"
     );
   }
@@ -169,7 +169,7 @@ export async function deleteTask(input: DeleteTaskInput) {
   if (!mongoose.Types.ObjectId.isValid(input.taskId)) {
     throw new HttpError(
       "Task not found",
-      404,
+      400,
       "INVALID_TASK_ID"
     );
   }
