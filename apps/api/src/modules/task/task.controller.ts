@@ -7,6 +7,8 @@
 import { Request, Response, NextFunction } from "express";
 import * as taskService from "../../services/task/task.service";
 import { HttpError } from "../../errors";
+import { CreateTaskDTO , UpdateTaskDTO } from "./task.dto";
+import { validateDTO } from "../../utils/validate";
 
 /**
  * Utility to safely extract fully-built context
@@ -34,33 +36,27 @@ export async function createTaskController(
   next: NextFunction
 ) {
   try {
-    const { title, description, priority } = req.body;
-
-    if (!title) {
-      throw new HttpError(
-        "Title is required",
-        400,
-        "VALIDATION_ERROR"
-      );
-    }
 
     const { user, workspace, role } = requireFullContext(req);
+
+    // Validate request body
+    const body = validateDTO(CreateTaskDTO, req.body);
 
     const task = await taskService.createTask({
       workspaceId: workspace.id,
       userId: user.id,
       role,
-      title,
-      description,
-      priority,
+      title: body.title,
+      description: body.description,
+      priority: body.priority,
     });
 
     res.status(201).json(task);
+
   } catch (err) {
     next(err);
   }
 }
-
 /**
  * List Tasks
  */
@@ -134,12 +130,15 @@ export async function updateTaskController(
       );
     }
 
+    // ✅ Validate body using DTO
+    const updates = validateDTO(UpdateTaskDTO, req.body);
+
     const task = await taskService.updateTask({
       workspaceId: workspace.id,
       userId: user.id,
       role,
       taskId: id,
-      updates: req.body,
+      updates,
     });
 
     res.json(task);
