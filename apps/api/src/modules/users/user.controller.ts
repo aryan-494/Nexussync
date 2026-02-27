@@ -4,6 +4,8 @@
 
 import type { Request, Response, NextFunction } from "express";
 import { signupUser } from "./user.service";
+import { SignupDTO } from "../auth/auth.dto";   
+import { validateDTO } from "../../utils/validate";
 
 export async function signupController(
   req: Request,
@@ -11,18 +13,10 @@ export async function signupController(
   next: NextFunction
 ) {
   try {
-    const { email, password } = req.body;
+    const body = validateDTO(SignupDTO, req.body);
 
-    // Basic presence check (NOT business rules)
-    if (!email || !password) {
-      return res.status(400).json({
-        error: "Email and password are required",
-      });
-    }
+    const user = await signupUser(body.email, body.password);
 
-    const user = await signupUser(email, password);
-
-    // Never expose passwordHash
     return res.status(201).json({
       id: user.id,
       email: user.email,
@@ -33,4 +27,3 @@ export async function signupController(
     next(error);
   }
 }
- 

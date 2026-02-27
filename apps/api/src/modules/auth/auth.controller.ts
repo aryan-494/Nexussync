@@ -5,6 +5,9 @@ import {
   ACCESS_TOKEN_COOKIE,
   REFRESH_TOKEN_COOKIE,
 } from "./auth.types";
+import { validateDTO } from "../../utils/validate";
+import { LoginDTO } from "./auth.dto";
+import { HttpError } from "../../errors";
 
 /**
  * POST /api/v1/auth/login
@@ -15,21 +18,12 @@ export async function loginController(
   next: NextFunction
 ) {
   try {
-    const { email, password } = req.body;
+    const body = validateDTO(LoginDTO, req.body);
 
-    // Basic presence validation (NOT business logic)
-    if (!email || !password) {
-      return res.status(400).json({
-        error: "Email and password are required",
-      });
-    }
+    const result = await loginUser(body.email, body.password);
 
-    const result = await loginUser(email, password);
-
-    // Set auth cookies
     setAuthCookies(res, result.accessToken, result.refreshToken);
 
-    // Return safe user data
     res.json({
       user: result.user,
     });

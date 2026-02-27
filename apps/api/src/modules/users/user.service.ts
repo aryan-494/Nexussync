@@ -26,7 +26,8 @@ export async function signupUser(
   if (password.length < 8) {
     throw new HttpError(
       "Password must be at least 8 characters",
-      409
+      409,
+      "VALIDATION_ERROR"
     );
   }
 
@@ -36,7 +37,7 @@ export async function signupUser(
   });
 
   if (existingUser) {
-    throw new HttpError("Email already in use", 409);
+    throw new HttpError("Email already in use", 409, "USER_EXISTS");
   }
 
   // 4️⃣ Hash password
