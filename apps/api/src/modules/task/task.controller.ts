@@ -9,6 +9,7 @@ import * as taskService from "../../services/task/task.service";
 import { HttpError } from "../../errors";
 import { CreateTaskDTO , UpdateTaskDTO } from "./task.dto";
 import { validateDTO } from "../../utils/validate";
+import { PaginationDTO } from "../../utils/pagination.dto";
 
 /**
  * Utility to safely extract fully-built context
@@ -68,12 +69,20 @@ export async function listTasksController(
   try {
     const { workspace, role } = requireFullContext(req);
 
-    const tasks = await taskService.listTasks({
+    // Validate and parse query params
+    const pagination = validateDTO(PaginationDTO, req.query);
+
+    const page = pagination.page;
+    const limit = Math.min(pagination.limit, 100); // hard safety cap
+
+    const result = await taskService.listTasks({
       workspaceId: workspace.id,
       role,
+      page,
+      limit,
     });
 
-    res.json(tasks);
+    res.json(result);
   } catch (err) {
     next(err);
   }

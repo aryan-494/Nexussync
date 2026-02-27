@@ -30,19 +30,38 @@ export async function createTask(input: CreateTaskInput) {
 interface ListTasksInput {
   workspaceId: string;
   role: "OWNER" | "MEMBER";
+  page: number;
+  limit: number;
 }
 
 export async function listTasks(input: ListTasksInput) {
-  const { workspaceId } = input;
+  const { workspaceId, page, limit } = input;
 
-  const tasks = await TaskModel.find({
+  const skip = (page - 1) * limit;
+
+  const filter = {
     workspaceId: new mongoose.Types.ObjectId(workspaceId),
-  })
-    .sort({ createdAt: -1 })
-    .lean();
+  };
 
-  return tasks;
+  const [tasks, total] = await Promise.all([
+    TaskModel.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+
+    TaskModel.countDocuments(filter),
+  ]);
+
+  return {
+    tasks,
+    page,
+    limit,
+    total,
+  };
 }
+
+
+
 
 interface GetTaskInput {
   workspaceId: string;
