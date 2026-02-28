@@ -1,6 +1,6 @@
 import React, { createContext, useEffect, useState } from "react";
 import type { AuthState, AuthUser } from "./auth.types";
-import { getMe, refresh, login as loginApi, logout as logoutApi } from "../api/auth";
+import { getMe, refresh, login as loginApi, logout as logoutApi } from "../api/auth.api";
 
 export type AuthContextValue = AuthState & {
   login: (email: string, password: string) => Promise<void>;
