@@ -1,10 +1,6 @@
 import { useEffect, useState } from "react";
-import {
-  getTasks,
-  createTask,
-  deleteTask,
-  Task,
-} from "../../api/task.api";
+import { getTasks, createTask, deleteTask } from "../../api/task.api";
+import type { Task } from "../../api/task.api";
 import type { AppError } from "../../api/http";
 
 export function useTasks(slug: string) {

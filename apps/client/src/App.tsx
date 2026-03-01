@@ -4,6 +4,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { WorkspaceProvider } from "./contexts/WorkspaceContext";
 import { ProtectedRoute } from "./routes/ProtectedRoute";
 import WorkspaceListPage from "./pages/WorkspaceListPage";
+import { TaskPage } from "./pages/TaskPage";
 
 import {Login} from "./pages/login";
 import {Register} from "./pages/Register";
@@ -39,6 +40,15 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
+            <Route
+  path="/w/:slug/tasks"
+  element={
+    <ProtectedRoute>
+      <TaskPage />
+    </ProtectedRoute>
+  }
+/>
 
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />
