@@ -14,7 +14,8 @@ import {
   useState,
   ReactNode,
 } from "react";
-import { getWorkspaces, Workspace } from "../api/workspace.api";
+import { getWorkspaces } from "../api/workspace.api";
+import type { Workspace } from "../api/workspace.api";
 import { useAuth } from "./AuthContext";
 import type { AppError } from "../api/http";
 
