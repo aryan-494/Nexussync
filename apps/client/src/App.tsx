@@ -1,11 +1,13 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+
 import { AuthProvider } from "./contexts/AuthContext";
 import { WorkspaceProvider } from "./contexts/WorkspaceContext";
 import { ProtectedRoute } from "./routes/ProtectedRoute";
+import WorkspaceListPage from "./pages/WorkspaceListPage";
 
-import Login from "./pages/login";
-import Register from "./pages/Register";
-import Me from "./pages/Me";
+import {Login} from "./pages/login";
+import {Register} from "./pages/Register";
+import {Me} from "./pages/Me";
 
 function App() {
   return (
@@ -14,11 +16,13 @@ function App() {
         <WorkspaceProvider>
           <Routes>
 
-            <Route path="/" element={<Navigate to="/me" replace />} />
-
+            {/* Default route */}
+            <Route path="/" element={<Navigate to="/workspaces" replace />} />
+            {/* Public routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
 
+            {/* Protected route */}
             <Route
               path="/me"
               element={
@@ -27,6 +31,17 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+            path="/workspaces"
+            element={
+                <ProtectedRoute>
+                   <WorkspaceListPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
 
           </Routes>
         </WorkspaceProvider>
@@ -34,4 +49,5 @@ function App() {
     </BrowserRouter>
   );
 }
+
 export default App;

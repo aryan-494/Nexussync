@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { register } from "../api/auth.api";
 import { Navigate } from "react-router-dom";
-import { useAuth } from "../auth/useAuth";
+import { useAuth } from "../contexts/AuthContext";
 
 export function Register() {
-  const { status } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
 
-  if (status === "authenticated") {
+  if (isAuthenticated) {
     return <Navigate to="/me" replace />;
   }
 

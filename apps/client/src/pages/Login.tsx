@@ -3,13 +3,13 @@ import { useAuth } from "../contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 
 export function Login() {
-  const { login, status, loading } = useAuth();
+ const { login, isAuthenticated, loading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  if (status === "authenticated") {
-    return <Navigate to="/me" replace />;
+  if (isAuthenticated) {
+    return <Navigate to="/workspaces" replace />;
   }
 
   async function handleSubmit(e: React.FormEvent) {

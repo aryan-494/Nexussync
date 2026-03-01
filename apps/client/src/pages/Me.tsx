@@ -1,10 +1,14 @@
-import { useAuth } from "../auth/useAuth";
+import { useAuth } from "../contexts/AuthContext";
 
 export function Me() {
   const { user, logout, loading } = useAuth();
 
-  if (loading || !user) {
+  if (loading) {
     return <div>Loading...</div>;
+  }
+
+  if (!user) {
+    return <div>Not authenticated</div>;
   }
 
   return (
@@ -15,4 +19,3 @@ export function Me() {
     </div>
   );
 }
-
