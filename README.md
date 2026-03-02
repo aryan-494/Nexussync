@@ -159,10 +159,6 @@ state
 time
 synchronization
 
-Disclaimer:
-
-NexusSync is a learning-driven, system-heavy project.
-It prioritizes engineering depth over visual polish.
 
 UI will evolve.
 Architecture will not be compromised.
