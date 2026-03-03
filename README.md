@@ -24,7 +24,7 @@ UI updates instantly
 data survives refresh and offline usage
 synchronization happens in the background
 conflicts are resolved deterministically
-This project is built for deep learning, not shortcuts.
+
 
 
 
