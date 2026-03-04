@@ -137,11 +137,6 @@ backend spine (auth + workspaces)
 persistent local data
 sync correctness
 
-Project Philosophy
-
-This project is built as if:
-
-its long-term quality matters more than speed
 
 
 
