@@ -3,6 +3,23 @@ import { TaskModel, TaskStatus, TaskPriority } from "../../db/models/task.model"
 import { HttpError } from "../../errors";
 import { WorkspaceMemberModel } from "../../db/models/workspaceMember.model";
 
+/**
+ * Map Mongo document -> API response
+ * This prevents leaking _id to frontend
+ */
+function mapTask(task: any) {
+  return {
+    id: task._id.toString(),
+    title: task.title,
+    description: task.description,
+    status: task.status,
+    priority: task.priority,
+    assignedTo: task.assignedTo ?? null,
+    createdAt: task.createdAt,
+    updatedAt: task.updatedAt,
+  };
+}
+
 interface CreateTaskInput {
   workspaceId: string;
   userId: string;
@@ -24,7 +41,7 @@ export async function createTask(input: CreateTaskInput) {
     createdBy: new mongoose.Types.ObjectId(userId),
   });
 
-  return task;
+  return mapTask(task);
 }
 
 interface ListTasksInput {
@@ -53,15 +70,12 @@ export async function listTasks(input: ListTasksInput) {
   ]);
 
   return {
-    tasks,
+    tasks: tasks.map(mapTask),
     page,
     limit,
     total,
   };
 }
-
-
-
 
 interface GetTaskInput {
   workspaceId: string;
@@ -92,7 +106,7 @@ export async function getTaskById(input: GetTaskInput) {
     );
   }
 
-  return task;
+  return mapTask(task);
 }
 
 interface UpdateTaskInput {
@@ -175,7 +189,7 @@ export async function updateTask(input: UpdateTaskInput) {
   task.set(filteredUpdates);
   await task.save();
 
-  return task;
+  return mapTask(task);
 }
 
 interface DeleteTaskInput {

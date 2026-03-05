@@ -32,7 +32,10 @@ export function useTasks(slug: string) {
   }
 
   async function handleCreate(title: string) {
-    await createTask(slug, { title });
+    await await createTask(slug, {
+  title,
+  priority: "MEDIUM",
+});
     await loadTasks(1);
   }
 
