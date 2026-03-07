@@ -1,69 +1,63 @@
-// what this file really do?
-// it transport layer for http request, it will handle the base url and the token
-// always send cookie and parse json, and throw clean error
-
 const BASE_URL = import.meta.env.VITE_API_URL as string;
 
-
 export type AppError = {
-  code: string;
-  message: string;
-  status: number;
-};
+  code: string
+  message: string
+  status: number
+}
 
 async function request<T>(
   path: string,
-  options: RequestInit = {}
+  options: RequestInit
 ): Promise<T> {
 
-    const response = await fetch(`${BASE_URL}${path}` , {
-        ...options,
-        credentials:"include" , // always send cokkies 
-        headers:{
-            "Content-Type":"application/json",
-            ...(options.headers || {}),
-        },
-
-    });
-
-    let data: any = null;
-
-    try{
-        data= await response.json();
+  const res = await fetch(`${BASE_URL}${path}`, {
+    ...options,
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {})
     }
-    catch{
-        data = null;
-    }
-   
+  })
 
-    if (!response.ok){
-        const error : AppError = {
-            code: data?.error?.code || "UNKNOWN_ERROR",
-            message : data?.error?.message || "somthing went wrong",
-            status: response.status,
-            
-        };
+  if (!res.ok) {
 
-        throw error;
+    let data
+
+    try {
+      data = await res.json()
+    } catch {
+      throw {
+        code: "UNKNOWN_ERROR",
+        message: "Unknown server error",
+        status: res.status
+      } satisfies AppError
     }
 
-    return data as T;
+    throw {
+      code: data?.error?.code ?? "UNKNOWN_ERROR",
+      message: data?.error?.message ?? "Request failed",
+      status: res.status
+    } satisfies AppError
+  }
 
+  return res.json()
 }
 
-
 export const http = {
-    get:<T>(path:string)=>
-        request<T>(path,{
-            method:"GET",
-        }),
-    
-    post:<T>(path:string, body?:unknown)=> request<T>(path , {
-        method:"POST",
-        body: body ? JSON.stringify(body):undefined,
 
+  get: <T>(path: string) =>
+    request<T>(path, {
+      method: "GET",
     }),
-    patch: <T>(path: string, body?: unknown) =>
+
+  post: <T>(path: string, body?: unknown) =>
+    request<T>(path, {
+      method: "POST",
+      body: body ? JSON.stringify(body) : undefined,
+    }),
+
+  patch: <T>(path: string, body?: unknown) =>
     request<T>(path, {
       method: "PATCH",
       body: body ? JSON.stringify(body) : undefined,
@@ -74,4 +68,3 @@ export const http = {
       method: "DELETE",
     }),
 }
-

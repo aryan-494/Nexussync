@@ -10,53 +10,81 @@ export function useTasks(slug: string) {
   const [total, setTotal] = useState(0);
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<AppError | null>(null);
-
+ const [error, setError] = useState<AppError | null>(null);
   const totalPages = Math.ceil(total / limit);
 
-  async function loadTasks(currentPage = page) {
-    try {
-      setLoading(true);
-      setError(null);
+  async function loadTasks(pageNumber: number) {
+  try {
 
-      const data = await getTasks(slug, currentPage, limit);
+    setLoading(true);
+    setError(null);
 
-      setTasks(data.tasks);
-      setTotal(data.total);
-      setPage(data.page);
-    } catch (err) {
-      setError(err as AppError);
-    } finally {
-      setLoading(false);
-    }
+    const data = await getTasks(slug, pageNumber, limit);
+
+    setTasks(data.tasks);
+    setPage(data.page);
+    setTotal(data.total);
+
+  } catch (err) {
+
+    const e = err as AppError;
+    setError(e);
+
+  } finally {
+    setLoading(false);
   }
+}
+async function handleCreate(
+  title: string,
+  description?: string,
+  priority?: string
+) {
 
-  async function handleCreate(title: string) {
-    await await createTask(slug, {
-  title,
-  priority: "MEDIUM",
-});
-    await loadTasks(1);
-  }
+  try {
 
-  async function handleDelete(taskId: string) {
-    await deleteTask(slug, taskId);
+    await createTask(slug, {
+      title,
+      description,
+      priority
+    });
+
     await loadTasks(page);
+
+  } catch (err) {
+
+    const error = err as AppError;
+    setError(error);
+
   }
+}
+async function handleDelete(id: string) {
+  try {
+
+    await deleteTask(slug, id);
+    await loadTasks(page);
+
+  } catch (err) {
+
+    const e = err as AppError;
+    setError(e);
+
+  }
+}
 
   useEffect(() => {
     loadTasks(1);
   }, [slug]);
 
-  return {
-    tasks,
-    page,
-    totalPages,
-    loading,
-    error,
-    setPage,
-    loadTasks,
-    handleCreate,
-    handleDelete,
-  };
+ return {
+  tasks,
+  page,
+  setPage,
+  total,
+  limit,
+  loading,
+  error,
+  loadTasks,
+  handleCreate,
+  handleDelete,
+};
 }
