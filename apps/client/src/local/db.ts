@@ -35,7 +35,7 @@ export type OperationType = "TASK_CREATE" | "TASK_UPDATE" | "TASK_DELETE";
    Operation Log Entity
 ================================ */
 export interface OperationLog {
-      seq?: number;
+  seq?: number;
 
   opId: string;
   type: OperationType;
