@@ -1,47 +1,70 @@
 import { db } from "../db"
 import { OperationType } from "../types/operations"
 
+import {
+  createTask,
+  updateTask,
+  deleteTask
+} from "../../api/task.api"
 
-// fetch all the operation which are not synced and fetch in order
+let isRunning = false
 
-async function getNextOperation(){
 
-    return db.opLog
-    .where("synced").equals(false).sortBy("seq").then(list=>list[0]);
+function isOnline() {
+  return navigator.onLine
+}
+
+
+/* =================================
+   Fetch unsynced operations
+================================ */
+
+async function getPendingOperations(limit = 10) {
+
+  return db.opLog
+    .where("synced")
+    .equals(false)
+    .limit(limit)
+    .toArray()
 
 }
 
-async function sendOperation(op: any) {
+
+/* =================================
+   Send operation to backend
+================================ */
+
+async function processOperation(op: any) {
 
   switch (op.type) {
 
-    case OperationType.TASK_CREATE:
+    case "TASK_CREATE":
 
-      await fetch(`/api/v1/tasks/${op.workspaceId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(op.payload)
-      })
-
-      break
-
-
-    case OperationType.TASK_UPDATE:
-
-      await fetch(`/api/v1/tasks/${op.workspaceId}/${op.entityId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(op.payload)
-      })
+      await createTask(
+        op.workspaceSlug,
+        op.payload
+      )
 
       break
 
 
-    case OperationType.TASK_DELETE:
+    case "TASK_UPDATE":
 
-      await fetch(`/api/v1/tasks/${op.workspaceId}/${op.entityId}`, {
-        method: "DELETE"
-      })
+      await updateTask(
+        op.workspaceSlug,
+        op.entityId,
+        op.payload
+      )
+
+      break
+
+
+    case "TASK_DELETE":
+
+      await deleteTask(
+        op.workspaceSlug,
+        op.entityId
+      )
 
       break
 
@@ -50,7 +73,10 @@ async function sendOperation(op: any) {
 }
 
 
-// after successfull sending mark the operation synced 
+/* =================================
+   Mark operation synced
+================================ */
+
 async function markSynced(op: any) {
 
   await db.opLog.update(op.seq, {
@@ -64,36 +90,71 @@ async function markSynced(op: any) {
 }
 
 
-// Now create Sync loop 
+/* =================================
+   Process queue
+================================ */
 
-export async function runSyncEngine() {
+async function processQueue() {
 
-  const op = await getNextOperation()
+  const operations = await getPendingOperations()
 
-  if (!op) return
+  if (!operations.length) return
 
-  try {
+  for (const op of operations) {
 
-    await sendOperation(op)
+    try {
 
-    await markSynced(op)
+      await processOperation(op)
 
-  } catch (err) {
+      await markSynced(op)
 
-    console.error("Sync failed", err)
+    } catch (err) {
+
+      console.error("Sync failed", err)
+
+      break
+
+    }
 
   }
 
 }
 
-// Run sync Engine in every few second
+
+/* =================================
+   Sync engine runner
+================================ */
+
+export async function runSyncEngine() {
+
+  if (isRunning) return
+
+  if (!isOnline()) return
+
+  isRunning = true
+
+  try {
+
+    await processQueue()
+
+  } finally {
+
+    isRunning = false
+
+  }
+
+}
+
+
+/* =================================
+   Start engine
+================================ */
 
 export function startSyncEngine() {
 
-  setInterval(() => {
+  setInterval(runSyncEngine, 5000)
 
-    runSyncEngine()
-
-  }, 5000)
+  window.addEventListener("online", runSyncEngine)
 
 }
+

@@ -1,5 +1,4 @@
 import { db } from "../db"
-
 import { v4 as uuid } from "uuid"
 
 import {
@@ -8,68 +7,75 @@ import {
   deleteTaskOperation
 } from "../types/operationBuilders"
 
-import { TaskCreatePayload, TaskUpdatePayload } from "../types/operations";
+import { TaskCreatePayload, TaskUpdatePayload } from "../types/operations"
 
 
 
+/* =================================
+   HELPER: find pending update
+================================= */
 
-
-
-
-
-// add helper function for unsynced operation from the op log
-
-async function findPendingUpdate(taskId:string) {
+async function findPendingUpdate(taskId: string) {
 
   return db.opLog
-  .where("entityId").equals(taskId).and(op=>op.type === "TASK_UPDATE" && !op.synced).first()
-  
-};
-
-export async function createTaskLocal(
-    workspaceId: string,
-    payload: Omit<TaskCreatePayload , "id">  // Omit = remove property from type  id is removed from the payload 
-
-    
-){
-    const taskId = uuid()
-
-    const now = new Date().toISOString()
-
-    // create task locally 
-
-    const task = {
-        id:taskId,
-        workspaceId,
-        ...payload,
-        status:"TODO",
-        createdBy:"me",
-        createdAt:now,
-        upadtedAt:now,
-        synced: false
-    }
-
-    const operation = createTaskOperation(workspaceId , {
-        id:taskId,
-        ...payload
-    })
-
-
-    // creaitng transction means -> This ensures both writes happen together. task table an doplog table
-    await db.transaction("rw" , db.tasks, db.opLog , async ()=>{
-        await db.tasks.add(task)
-        await db.opLog.add(operation)
-    })
-
-    return task
-
+    .where("entityId")
+    .equals(taskId)
+    .and(op => op.type === "TASK_UPDATE" && !op.synced)
+    .first()
 
 }
 
 
 
+/* =================================
+   CREATE TASK LOCAL
+================================= */
+
+export async function createTaskLocal(
+  workspaceSlug: string,
+  payload: Omit<TaskCreatePayload, "id">
+) {
+
+  const taskId = uuid()
+
+  const now = new Date().toISOString()
+
+  const task = {
+    id: taskId,
+    workspaceSlug,
+    ...payload,
+    status: "TODO",
+    createdBy: "me",
+    createdAt: now,
+    updatedAt: now,
+    synced: false
+  }
+
+  const operation = createTaskOperation(workspaceSlug, {
+    id: taskId,
+    ...payload
+  })
+
+  await db.transaction("rw", db.tasks, db.opLog, async () => {
+
+    await db.tasks.add(task)
+
+    await db.opLog.add(operation)
+
+  })
+
+  return task
+
+}
+
+
+
+/* =================================
+   UPDATE TASK LOCAL
+================================= */
+
 export async function updateTaskLocal(
-  workspaceId: string,
+  workspaceSlug: string,
   taskId: string,
   payload: TaskUpdatePayload
 ) {
@@ -100,7 +106,7 @@ export async function updateTaskLocal(
     } else {
 
       const operation = updateTaskOperation(
-        workspaceId,
+        workspaceSlug,
         taskId,
         payload
       )
@@ -113,12 +119,18 @@ export async function updateTaskLocal(
 
 }
 
+
+
+/* =================================
+   DELETE TASK LOCAL
+================================= */
+
 export async function deleteTaskLocal(
-  workspaceId: string,
+  workspaceSlug: string,
   taskId: string
 ) {
 
-  const operation = deleteTaskOperation(workspaceId, taskId)
+  const operation = deleteTaskOperation(workspaceSlug, taskId)
 
   await db.transaction("rw", db.tasks, db.opLog, async () => {
 
@@ -130,20 +142,20 @@ export async function deleteTaskLocal(
     await db.opLog.add(operation)
 
   })
+
 }
 
 
 
-// Ui will read the task from the indexdDb only 
+/* =================================
+   GET TASKS LOCAL
+================================= */
 
-export async function getTasksLocal(workspaceId: string) {
+export async function getTasksLocal(workspaceSlug: string) {
 
   return db.tasks
-    .where("workspaceId")
-    .equals(workspaceId)
+    .where("workspaceSlug")
+    .equals(workspaceSlug)
     .toArray()
 
 }
-
-
-// add helper function for unsynced operation from the op log

@@ -8,7 +8,7 @@ export interface BaseOperation {
   opId: string
   type: OperationType
   entityId: string
-  workspaceId: string
+ workspaceSlug: string
   payload: unknown
   createdAt: string
   synced: boolean

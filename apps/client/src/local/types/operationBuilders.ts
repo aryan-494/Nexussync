@@ -16,7 +16,7 @@ import {
 ================================= */
 
 export function createTaskOperation(
-  workspaceId: string,
+  workspaceSlug: string,
   payload: TaskCreatePayload
 ): TaskCreateOperation {
 
@@ -27,7 +27,7 @@ export function createTaskOperation(
 
     entityId: payload.id,
 
-    workspaceId,
+    workspaceSlug,
 
     payload,
 
@@ -43,7 +43,7 @@ export function createTaskOperation(
 ================================= */
 
 export function updateTaskOperation(
-  workspaceId: string,
+  workspaceSlug: string,
   taskId: string,
   payload: TaskUpdatePayload
 ): TaskUpdateOperation {
@@ -55,7 +55,7 @@ export function updateTaskOperation(
 
     entityId: taskId,
 
-    workspaceId,
+    workspaceSlug,
 
     payload,
 
@@ -71,7 +71,7 @@ export function updateTaskOperation(
 ================================= */
 
 export function deleteTaskOperation(
-  workspaceId: string,
+  workspaceSlug: string,
   taskId: string
 ): TaskDeleteOperation {
 
@@ -86,7 +86,7 @@ export function deleteTaskOperation(
 
     entityId: taskId,
 
-    workspaceId,
+    workspaceSlug,
 
     payload,
 

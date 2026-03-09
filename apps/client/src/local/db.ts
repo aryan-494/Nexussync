@@ -1,12 +1,12 @@
 import Dexie, { Table } from "dexie";
 
-
 /* ================================
    Task Entity
 ================================ */
+
 export interface LocalTask {
   id: string;
-  workspaceId: string;
+  workspaceSlug: string;
 
   title: string;
   description?: string;
@@ -23,17 +23,19 @@ export interface LocalTask {
   synced: boolean;
 }
 
-
 /* ================================
    Operation Types
 ================================ */
 
-export type OperationType = "TASK_CREATE" | "TASK_UPDATE" | "TASK_DELETE";
-
+export type OperationType =
+  | "TASK_CREATE"
+  | "TASK_UPDATE"
+  | "TASK_DELETE";
 
 /* ================================
    Operation Log Entity
 ================================ */
+
 export interface OperationLog {
   seq?: number;
 
@@ -41,18 +43,15 @@ export interface OperationLog {
   type: OperationType;
 
   entityId: string;
-  workspaceId: string;
+  workspaceSlug: string;
 
-  payload: any;
+  payload: unknown;
 
   createdAt: string;
 
   synced: boolean;
   failed?: boolean;
-
-
 }
-
 
 /* ================================
    Dexie Database
@@ -70,9 +69,9 @@ class NexusSyncDB extends Dexie {
 
       tasks: `
         id,
-        workspaceId,
-        [workspaceId+status],
-        [workspaceId+assignedTo]
+        workspaceSlug,
+        [workspaceSlug+status],
+        [workspaceSlug+assignedTo]
       `,
 
       opLog: `
@@ -80,7 +79,7 @@ class NexusSyncDB extends Dexie {
         opId,
         type,
         entityId,
-        workspaceId,
+        workspaceSlug,
         synced
       `,
     });
@@ -88,4 +87,3 @@ class NexusSyncDB extends Dexie {
 }
 
 export const db = new NexusSyncDB();
-
