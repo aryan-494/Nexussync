@@ -8,9 +8,23 @@ import {
   deleteTaskOperation
 } from "../types/operationBuilders"
 
-import { TaskCreatePayload, TaskUpdatePayload } from "../types/operations"
+import { TaskCreatePayload, TaskUpdatePayload } from "../types/operations";
 
 
+
+
+
+
+
+
+// add helper function for unsynced operation from the op log
+
+async function findPendingUpdate(taskId:string) {
+
+  return db.opLog
+  .where("entityId").equals(taskId).and(op=>op.type === "TASK_UPDATE" && !op.synced).first()
+  
+};
 
 export async function createTaskLocal(
     workspaceId: string,
@@ -62,12 +76,6 @@ export async function updateTaskLocal(
 
   const now = new Date().toISOString()
 
-  const operation = updateTaskOperation(
-    workspaceId,
-    taskId,
-    payload
-  )
-
   await db.transaction("rw", db.tasks, db.opLog, async () => {
 
     await db.tasks.update(taskId, {
@@ -76,11 +84,34 @@ export async function updateTaskLocal(
       synced: false
     })
 
-    await db.opLog.add(operation)
+    const existingOp = await findPendingUpdate(taskId)
+
+    if (existingOp) {
+
+      const mergedPayload = {
+        ...existingOp.payload,
+        ...payload
+      }
+
+      await db.opLog.update(existingOp.seq!, {
+        payload: mergedPayload
+      })
+
+    } else {
+
+      const operation = updateTaskOperation(
+        workspaceId,
+        taskId,
+        payload
+      )
+
+      await db.opLog.add(operation)
+
+    }
 
   })
-}
 
+}
 
 export async function deleteTaskLocal(
   workspaceId: string,
@@ -113,3 +144,6 @@ export async function getTasksLocal(workspaceId: string) {
     .toArray()
 
 }
+
+
+// add helper function for unsynced operation from the op log
