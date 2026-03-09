@@ -1,33 +1,93 @@
 import { db } from "../db"
-import { OperationType } from "../types/operations"
-
 import {
   createTask,
   updateTask,
   deleteTask
 } from "../../api/task.api"
 
+
+
+/* =================================
+   Retry with exponential backoff
+================================ */
+
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxRetries = 3
+): Promise<T> {
+
+  let attempt = 0
+
+  while (true) {
+
+    try {
+      return await fn()
+    } catch (err) {
+
+      if (attempt >= maxRetries) {
+        throw err
+      }
+
+      const delay = Math.pow(2, attempt) * 1000
+
+      await new Promise(resolve => setTimeout(resolve, delay))
+
+      attempt++
+    }
+  }
+}
+
+
+
+/* =================================
+   Multi-tab sync protection
+================================ */
+
+const channel = new BroadcastChannel("nexussync-sync")
+
+let isLeader = true
 let isRunning = false
 
+channel.onmessage = (event) => {
+
+  if (event.data === "SYNC_LEADER") {
+    isLeader = false
+  }
+
+}
+
+function announceLeader() {
+  channel.postMessage("SYNC_LEADER")
+}
+
+
+
+/* =================================
+   Network state
+================================ */
 
 function isOnline() {
   return navigator.onLine
 }
 
 
+
 /* =================================
    Fetch unsynced operations
+   (batch of 10 ordered by seq)
 ================================ */
 
 async function getPendingOperations(limit = 10) {
 
-  return db.opLog
+  const ops = await db.opLog
     .where("synced")
     .equals(false)
-    .limit(limit)
-    .toArray()
+    .sortBy("seq")
+
+  return ops.slice(0, limit)
 
 }
+
 
 
 /* =================================
@@ -40,9 +100,8 @@ async function processOperation(op: any) {
 
     case "TASK_CREATE":
 
-      await createTask(
-        op.workspaceSlug,
-        op.payload
+      await retryWithBackoff(() =>
+        createTask(op.workspaceSlug, op.payload)
       )
 
       break
@@ -50,10 +109,8 @@ async function processOperation(op: any) {
 
     case "TASK_UPDATE":
 
-      await updateTask(
-        op.workspaceSlug,
-        op.entityId,
-        op.payload
+      await retryWithBackoff(() =>
+        updateTask(op.workspaceSlug, op.entityId, op.payload)
       )
 
       break
@@ -61,9 +118,8 @@ async function processOperation(op: any) {
 
     case "TASK_DELETE":
 
-      await deleteTask(
-        op.workspaceSlug,
-        op.entityId
+      await retryWithBackoff(() =>
+        deleteTask(op.workspaceSlug, op.entityId)
       )
 
       break
@@ -71,6 +127,7 @@ async function processOperation(op: any) {
   }
 
 }
+
 
 
 /* =================================
@@ -90,8 +147,9 @@ async function markSynced(op: any) {
 }
 
 
+
 /* =================================
-   Process queue
+   Process operation batch
 ================================ */
 
 async function processQueue() {
@@ -113,7 +171,6 @@ async function processQueue() {
       console.error("Sync failed", err)
 
       break
-
     }
 
   }
@@ -121,11 +178,14 @@ async function processQueue() {
 }
 
 
+
 /* =================================
    Sync engine runner
 ================================ */
 
 export async function runSyncEngine() {
+
+  if (!isLeader) return
 
   if (isRunning) return
 
@@ -146,15 +206,19 @@ export async function runSyncEngine() {
 }
 
 
+
 /* =================================
-   Start engine
+   Start sync engine
 ================================ */
 
-export function startSyncEngine() {
+export async function startSyncEngine() {
+
+    await db.open()
+
+  announceLeader()
 
   setInterval(runSyncEngine, 5000)
 
   window.addEventListener("online", runSyncEngine)
 
 }
-
