@@ -191,6 +191,25 @@ async function processQueue() {
 
 }
 
+/* =================================
+  cleanup over time of oplog
+================================ */
+
+async function cleanupOperations() {
+
+  const oldOps = await db.opLog
+    .where("synced")
+    .equals(true)
+    .toArray()
+
+  if (oldOps.length < 100) return
+
+  const ids = oldOps.slice(0, oldOps.length - 50).map(op => op.seq)
+
+  await db.opLog.bulkDelete(ids)
+
+}
+
 
 
 /* =================================
@@ -211,6 +230,7 @@ export async function runSyncEngine() {
 try {
 
   await processQueue()
+  await cleanupOperations()
 
   setSyncStatus("idle")
 
@@ -244,3 +264,6 @@ export async function startSyncEngine() {
   window.addEventListener("online", runSyncEngine)
 
 }
+
+
+
