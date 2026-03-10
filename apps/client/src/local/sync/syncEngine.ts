@@ -83,6 +83,7 @@ async function getPendingOperations(limit = 10) {
   const ops = await db.opLog
     .where("synced")
     .equals(false)
+    .filter(op => !op.failed)
     .sortBy("seq")
 
   return ops.slice(0, limit)
@@ -167,12 +168,24 @@ async function processQueue() {
 
       await markSynced(op)
 
-    } catch (err) {
+    } catch (err: any) {
 
-      console.error("Sync failed", err)
+  console.error("Sync failed", err)
 
-      break
-    }
+  const status = err?.response?.status
+
+  if (status && status >= 400 && status < 500) {
+
+    await db.opLog.update(op.seq, {
+      failed: true
+    })
+
+    console.warn("Operation marked as permanently failed")
+
+  }
+
+  break
+}
 
   }
 
