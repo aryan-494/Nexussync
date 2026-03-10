@@ -3,11 +3,12 @@ import { useWorkspace } from "../contexts/WorkspaceContext";
 import { TaskForm } from "../modules/tasks/TaskForm";
 import { TaskList } from "../modules/tasks/TaskList";
 import { useTasks } from "../modules/tasks/useTasks";
-import { updateTask } from "../api/task.api";
 import type { AppError } from "../api/http";
 
 import { hydrateWorkspace } from "../local/hydration/hydrateWorkspace";
 import { useSyncStatus } from "../local/sync/syncState";
+
+import { updateTaskLocal} from "../local/repositories/taskRepository"
 
 import { useEffect } from "react";
 
@@ -55,25 +56,22 @@ export function TaskPage() {
 
   const totalPages = Math.ceil(total / limit);
 
+
+
+  // Now removed api call and  UI will update automatically because of Dexie liveQuery.
+
   async function handleStatusChange(
-    id: string,
-    status: string
-  ) {
-    try {
+  id: string,
+  status: string
+) {
 
-      await updateTask(slug, id, { status });
+  if (!slug) return
 
-      await loadTasks(page);
+  await updateTaskLocal(slug, id, {
+    status
+  })
 
-    } catch (err) {
-
-      const error = err as AppError;
-
-      console.error("Status update failed:", error);
-
-      alert(error.message);
-    }
-  }
+}
 
   return (
     <div>

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { getTasks, createTask, deleteTask } from "../../api/task.api";
+import { getTasks, createTask } from "../../api/task.api";
 import type { Task } from "../../api/task.api";
 import type { AppError } from "../../api/http";
+import {deleteTaskLocal} from "../../local/repositories/taskRepository"
 
 export function useTasks(slug: string) {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -58,17 +59,11 @@ async function handleCreate(
   }
 }
 async function handleDelete(id: string) {
-  try {
 
-    await deleteTask(slug, id);
-    await loadTasks(page);
+  if (!slug) return
 
-  } catch (err) {
+  await deleteTaskLocal(slug, id)
 
-    const e = err as AppError;
-    setError(e);
-
-  }
 }
 
   useEffect(() => {
