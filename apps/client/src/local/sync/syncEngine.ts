@@ -4,6 +4,7 @@ import {
   updateTask,
   deleteTask
 } from "../../api/task.api"
+import { setSyncStatus } from "./syncState"
 
 
 
@@ -192,16 +193,24 @@ export async function runSyncEngine() {
   if (!isOnline()) return
 
   isRunning = true
+ setSyncStatus("syncing")
 
-  try {
+try {
 
-    await processQueue()
+  await processQueue()
 
-  } finally {
+  setSyncStatus("idle")
 
-    isRunning = false
+} catch (err) {
 
-  }
+  setSyncStatus("error")
+  throw err
+
+} finally {
+
+  isRunning = false
+
+}
 
 }
 
