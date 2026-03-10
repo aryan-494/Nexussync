@@ -1,27 +1,28 @@
-import type { Task } from "../../api/task.api";
+import { useTasksLocal } from "../../local/hooks/useTasksLocal";
 import { TaskItem } from "./TaskItem";
 
 type Props = {
-  tasks: Task[];
+  workspaceSlug: string;
   canDelete: boolean;
   onDelete: (id: string) => Promise<void>;
   onStatusChange: (id: string, status: string) => Promise<void>;
 };
 
 export function TaskList({
-  tasks,
+  workspaceSlug,
   canDelete,
   onDelete,
   onStatusChange,
 }: Props) {
 
-  if (tasks.length === 0) {
+  const tasks = useTasksLocal(workspaceSlug);
+
+  if (!tasks || tasks.length === 0) {
     return <p>No tasks yet.</p>;
   }
 
   return (
     <ul>
-
       {tasks.map((task) => (
         <TaskItem
           key={task.id}
@@ -31,7 +32,6 @@ export function TaskList({
           onStatusChange={onStatusChange}
         />
       ))}
-
     </ul>
   );
 }

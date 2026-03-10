@@ -6,6 +6,11 @@ import { useTasks } from "../modules/tasks/useTasks";
 import { updateTask } from "../api/task.api";
 import type { AppError } from "../api/http";
 
+import { hydrateWorkspace } from "../local/hydration/hydrateWorkspace";
+import { useSyncStatus } from "../local/sync/syncState";
+
+import { useEffect } from "react";
+
 export function TaskPage() {
 
   const { slug } = useParams();
@@ -28,9 +33,15 @@ export function TaskPage() {
     handleDelete,
   } = useTasks(slug);
 
+  const syncStatus = useSyncStatus();
+
   if (!slug) {
     return <Navigate to="/workspaces" replace />;
   }
+
+  useEffect(() => {
+    hydrateWorkspace(slug);
+  }, [slug]);
 
   if (workspaceLoading) {
     return <div>Loading workspace...</div>;
@@ -75,6 +86,10 @@ export function TaskPage() {
         Your role: {workspace.role}
       </p>
 
+      <p>
+        Sync status: {syncStatus}
+      </p>
+
       <TaskForm onCreate={handleCreate} />
 
       {error && (
@@ -87,7 +102,7 @@ export function TaskPage() {
         <p>Loading tasks...</p>
       ) : (
         <TaskList
-          tasks={tasks}
+          workspaceSlug={slug}
           canDelete={workspace.role === "OWNER"}
           onDelete={handleDelete}
           onStatusChange={handleStatusChange}
