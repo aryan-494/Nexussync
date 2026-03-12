@@ -7,7 +7,7 @@ import {
   deleteTaskOperation
 } from "../types/operationBuilders"
 
-import { TaskCreatePayload, TaskUpdatePayload } from "../types/operations"
+import type { TaskCreatePayload, TaskUpdatePayload } from "../types/operations"
 
 
 

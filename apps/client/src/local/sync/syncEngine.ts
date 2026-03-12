@@ -83,10 +83,13 @@ async function getPendingOperations(limit = 10) {
   const ops = await db.opLog
     .where("synced")
     .equals(false)
-    .filter(op => !op.failed)
-    .sortBy("seq")
+    .toArray()
 
-  return ops.slice(0, limit)
+  const filtered = ops
+    .filter(op => !op.failed)
+    .sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0))
+
+  return filtered.slice(0, limit)
 
 }
 
