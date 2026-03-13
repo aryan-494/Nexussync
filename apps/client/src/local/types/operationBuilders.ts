@@ -1,15 +1,14 @@
 import { v4 as uuid } from "uuid"
 
-import type {
+import {
   OperationType,
-  TaskCreateOperation,
-  TaskCreatePayload,
-  TaskUpdateOperation,
-  TaskUpdatePayload,
-  TaskDeleteOperation,
-  TaskDeletePayload
+  type TaskCreateOperation,
+  type TaskCreatePayload,
+  type TaskUpdateOperation,
+  type TaskUpdatePayload,
+  type TaskDeleteOperation,
+  type TaskDeletePayload
 } from "./operations"
-
 
 /* =================================
    CREATE TASK OPERATION

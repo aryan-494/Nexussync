@@ -80,19 +80,15 @@ function isOnline() {
 
 async function getPendingOperations(limit = 10) {
 
-  const ops = await db.opLog
-    .where("synced")
-    .equals(false)
-    .toArray()
+  const ops = await db.opLog.toArray()
 
-  const filtered = ops
-    .filter(op => !op.failed)
+  const pending = ops
+    .filter(op => op.synced === false && !op.failed)
     .sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0))
 
-  return filtered.slice(0, limit)
+  return pending.slice(0, limit)
 
 }
-
 
 
 /* =================================
@@ -109,7 +105,7 @@ async function processOperation(op: any) {
         createTask(op.workspaceSlug, op.payload)
       )
 
-      break
+      
 
 
     case "TASK_UPDATE":
@@ -141,17 +137,17 @@ async function processOperation(op: any) {
 
 async function markSynced(op: any) {
 
-  await db.opLog.update(op.seq, {
-    synced: true
-  })
+  if (op.seq !== undefined) {
+    await db.opLog.update(op.seq, {
+      synced: true
+    })
+  }
 
   await db.tasks.update(op.entityId, {
     synced: true
   })
 
 }
-
-
 
 /* =================================
    Process operation batch
@@ -160,6 +156,9 @@ async function markSynced(op: any) {
 async function processQueue() {
 
   const operations = await getPendingOperations()
+
+  console.log("Pending ops:", operations)
+
 
   if (!operations.length) return
 
@@ -171,11 +170,11 @@ async function processQueue() {
 
       await markSynced(op)
 
-    } catch (err: any) {
+    }catch (err: any) {
 
   console.error("Sync failed", err)
 
-  const status = err?.response?.status
+  const status = err?.status
 
   if (status && status >= 400 && status < 500) {
 
@@ -185,13 +184,12 @@ async function processQueue() {
 
     console.warn("Operation marked as permanently failed")
 
+    continue
   }
 
-  break
+  
+    }
 }
-
-  }
-
 }
 
 /* =================================
@@ -221,7 +219,7 @@ async function cleanupOperations() {
 
 export async function runSyncEngine() {
 
-  if (!isLeader) return
+  //if (!isLeader) return
 
   if (isRunning) return
 

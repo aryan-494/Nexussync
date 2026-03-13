@@ -1,85 +1,128 @@
 import { useEffect, useState } from "react";
-import { getTasks, createTask } from "../../api/task.api";
+import { getTasks } from "../../api/task.api";
 import type { Task } from "../../api/task.api";
 import type { AppError } from "../../api/http";
-import {deleteTaskLocal} from "../../local/repositories/taskRepository"
+
+import {
+  createTaskLocal,
+  deleteTaskLocal
+} from "../../local/repositories/taskRepository";
 
 export function useTasks(slug: string) {
+
   const [tasks, setTasks] = useState<Task[]>([]);
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [total, setTotal] = useState(0);
 
   const [loading, setLoading] = useState(false);
- const [error, setError] = useState<AppError | null>(null);
+  const [error, setError] = useState<AppError | null>(null);
+
   const totalPages = Math.ceil(total / limit);
 
+  /*
+  ================================
+  LOAD TASKS (Server → Hydration)
+  ================================
+  */
+
   async function loadTasks(pageNumber: number) {
-  try {
 
-    setLoading(true);
-    setError(null);
+    try {
 
-    const data = await getTasks(slug, pageNumber, limit);
+      setLoading(true);
+      setError(null);
 
-    setTasks(data.tasks);
-    setPage(data.page);
-    setTotal(data.total);
+      const data = await getTasks(slug, pageNumber, limit);
 
-  } catch (err) {
+      setTasks(data.tasks);
+      setPage(data.page);
+      setTotal(data.total);
 
-    const e = err as AppError;
-    setError(e);
+    } catch (err) {
 
-  } finally {
-    setLoading(false);
+      const e = err as AppError;
+      setError(e);
+
+    } finally {
+
+      setLoading(false);
+
+    }
   }
-}
-async function handleCreate(
-  title: string,
-  description?: string,
-  priority?: string
-) {
 
-  try {
+  /*
+  ================================
+  CREATE TASK (LOCAL-FIRST)
+  ================================
+  */
 
-    await createTask(slug, {
-      title,
-      description,
-      priority
-    });
+  async function handleCreate(
+    title: string,
+    description?: string,
+    priority?: string
+  ) {
 
-    await loadTasks(page);
+    try {
 
-  } catch (err) {
+      await createTaskLocal(slug, {
+        title,
+        description,
+        priority
+      });
 
-    const error = err as AppError;
-    setError(error);
+      // ❗ No loadTasks here
+      // UI updates automatically via IndexedDB + liveQuery
+
+    } catch (err) {
+
+      const error = err as AppError;
+      setError(error);
+
+    }
 
   }
-}
-async function handleDelete(id: string) {
 
-  if (!slug) return
+  /*
+  ================================
+  DELETE TASK (LOCAL-FIRST)
+  ================================
+  */
 
-  await deleteTaskLocal(slug, id)
+  async function handleDelete(id: string) {
 
-}
+    if (!slug) return;
+
+    await deleteTaskLocal(slug, id);
+
+  }
+
+  /*
+  ================================
+  INITIAL LOAD
+  ================================
+  */
 
   useEffect(() => {
+
     loadTasks(1);
+
   }, [slug]);
 
- return {
-  tasks,
-  page,
-  setPage,
-  total,
-  limit,
-  loading,
-  error,
-  loadTasks,
-  handleCreate,
-  handleDelete,
-};
+  return {
+
+    tasks,
+    page,
+    setPage,
+    total,
+    limit,
+    loading,
+    error,
+
+    loadTasks,
+    handleCreate,
+    handleDelete,
+
+  };
+
 }
