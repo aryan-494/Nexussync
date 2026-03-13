@@ -1,9 +1,11 @@
 import { db } from "../db"
+
 import {
   createTask,
   updateTask,
   deleteTask
 } from "../../api/task.api"
+
 import { setSyncStatus } from "./syncState"
 
 
@@ -31,7 +33,9 @@ async function retryWithBackoff<T>(
 
       const delay = Math.pow(2, attempt) * 1000
 
-      await new Promise(resolve => setTimeout(resolve, delay))
+      await new Promise(resolve =>
+        setTimeout(resolve, delay)
+      )
 
       attempt++
     }
@@ -74,8 +78,7 @@ function isOnline() {
 
 
 /* =================================
-   Fetch unsynced operations
-   (batch of 10 ordered by seq)
+   Fetch pending operations
 ================================ */
 
 async function getPendingOperations(limit = 10) {
@@ -83,12 +86,13 @@ async function getPendingOperations(limit = 10) {
   const ops = await db.opLog.toArray()
 
   const pending = ops
-    .filter(op => op.synced === false && !op.failed)
+    .filter(op => !op.synced && !op.failed)
     .sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0))
 
   return pending.slice(0, limit)
 
 }
+
 
 
 /* =================================
@@ -99,49 +103,77 @@ async function processOperation(op: any) {
 
   switch (op.type) {
 
-    case "TASK_CREATE":
+    case "TASK_CREATE": {
 
-      await retryWithBackoff(() =>
+      const serverTask = await retryWithBackoff(() =>
         createTask(op.workspaceSlug, op.payload)
       )
 
-      
+      await db.tasks.put({
+        id: serverTask.id,
+        workspaceSlug: op.workspaceSlug,
+        title: serverTask.title,
+        description: serverTask.description,
+        status: serverTask.status,
+        priority: serverTask.priority,
+        createdBy: "server",
+        assignedTo: serverTask.assignedTo ?? undefined,
+        createdAt: serverTask.createdAt,
+        updatedAt: serverTask.updatedAt,
+        synced: true
+      })
+
+      break
+    }
 
 
-    case "TASK_UPDATE":
+    case "TASK_UPDATE": {
 
-      await retryWithBackoff(() =>
+      const serverTask = await retryWithBackoff(() =>
         updateTask(op.workspaceSlug, op.entityId, op.payload)
       )
 
+      await db.tasks.put({
+        id: serverTask.id,
+        workspaceSlug: op.workspaceSlug,
+        title: serverTask.title,
+        description: serverTask.description,
+        status: serverTask.status,
+        priority: serverTask.priority,
+        createdBy: "server",
+        assignedTo: serverTask.assignedTo ?? undefined,
+        createdAt: serverTask.createdAt,
+        updatedAt: serverTask.updatedAt,
+        synced: true
+      })
+
       break
+    }
 
 
-    case "TASK_DELETE":
+    case "TASK_DELETE": {
 
       await retryWithBackoff(() =>
         deleteTask(op.workspaceSlug, op.entityId)
       )
 
+      await db.tasks.delete(op.entityId)
+
       break
+    }
 
   }
 
 }
-
-
-
 /* =================================
    Mark operation synced
 ================================ */
 
 async function markSynced(op: any) {
 
-  if (op.seq !== undefined) {
-    await db.opLog.update(op.seq, {
-      synced: true
-    })
-  }
+  await db.opLog.update(op.seq!, {
+    synced: true
+  })
 
   await db.tasks.update(op.entityId, {
     synced: true
@@ -149,16 +181,15 @@ async function markSynced(op: any) {
 
 }
 
+
+
 /* =================================
-   Process operation batch
+   Process queue
 ================================ */
 
 async function processQueue() {
 
   const operations = await getPendingOperations()
-
-  console.log("Pending ops:", operations)
-
 
   if (!operations.length) return
 
@@ -170,42 +201,53 @@ async function processQueue() {
 
       await markSynced(op)
 
-    }catch (err: any) {
+      // process one operation per cycle
+      break
 
-  console.error("Sync failed", err)
+    } catch (err: any) {
 
-  const status = err?.status
+      console.error("Sync failed", err)
 
-  if (status && status >= 400 && status < 500) {
+      const status =
+        err?.status ??
+        err?.response?.status
 
-    await db.opLog.update(op.seq, {
-      failed: true
-    })
+      if (status === 404 && op.type === "TASK_DELETE") {
 
-    console.warn("Operation marked as permanently failed")
+  await db.tasks.delete(op.entityId)
 
-    continue
+  await db.opLog.update(op.seq!, {
+    synced: true
+  })
+
+  continue
+}
+
+      break
+    }
+
   }
 
-  
-    }
-}
 }
 
+
+
 /* =================================
-  cleanup over time of oplog
+   Cleanup old operations
 ================================ */
 
 async function cleanupOperations() {
 
-  const oldOps = await db.opLog
-    .where("synced")
-    .equals(true)
-    .toArray()
+  const ops = await db.opLog.toArray()
+
+  const oldOps = ops.filter(op => op.synced === true)
 
   if (oldOps.length < 100) return
 
-  const ids = oldOps.slice(0, oldOps.length - 50).map(op => op.seq)
+  const ids: number[] = oldOps
+    .slice(0, oldOps.length - 50)
+    .map(op => op.seq!)
+    .filter((id): id is number => id !== undefined)
 
   await db.opLog.bulkDelete(ids)
 
@@ -219,32 +261,35 @@ async function cleanupOperations() {
 
 export async function runSyncEngine() {
 
-  //if (!isLeader) return
+  if (!isLeader) return
 
   if (isRunning) return
 
   if (!isOnline()) return
 
   isRunning = true
- setSyncStatus("syncing")
 
-try {
+  setSyncStatus("syncing")
 
-  await processQueue()
-  await cleanupOperations()
+  try {
 
-  setSyncStatus("idle")
+    await processQueue()
 
-} catch (err) {
+    await cleanupOperations()
 
-  setSyncStatus("error")
-  throw err
+    setSyncStatus("idle")
 
-} finally {
+  } catch (err) {
 
-  isRunning = false
+    console.error("Sync engine crashed", err)
 
-}
+    setSyncStatus("error")
+
+  } finally {
+
+    isRunning = false
+
+  }
 
 }
 
@@ -256,15 +301,15 @@ try {
 
 export async function startSyncEngine() {
 
-    await db.open()
+  await db.open()
 
   announceLeader()
 
   setInterval(runSyncEngine, 5000)
 
-  window.addEventListener("online", runSyncEngine)
+  window.addEventListener(
+    "online",
+    runSyncEngine
+  )
 
 }
-
-
-

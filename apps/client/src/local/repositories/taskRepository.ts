@@ -1,13 +1,20 @@
 import { db } from "../db"
-import { v4 as uuid } from "uuid"
+import { ObjectId } from "bson"
 
 import {
   createTaskOperation,
   updateTaskOperation,
   deleteTaskOperation
+
 } from "../types/operationBuilders"
 
-import type { TaskCreatePayload, TaskUpdatePayload } from "../types/operations"
+
+import { OperationType } from "../types/operations"
+import type {
+
+  TaskCreatePayload,
+  TaskUpdatePayload
+} from "../types/operations"
 
 
 
@@ -20,7 +27,7 @@ async function findPendingUpdate(taskId: string) {
   return db.opLog
     .where("entityId")
     .equals(taskId)
-    .and(op => op.type === "TASK_UPDATE" && !op.synced)
+    .and(op => op.type === OperationType.TASK_UPDATE && !op.synced)
     .first()
 
 }
@@ -36,7 +43,7 @@ export async function createTaskLocal(
   payload: Omit<TaskCreatePayload, "id">
 ) {
 
-  const taskId = uuid()
+  const taskId = new ObjectId().toHexString()
 
   const now = new Date().toISOString()
 
@@ -92,14 +99,14 @@ export async function updateTaskLocal(
 
     const existingOp = await findPendingUpdate(taskId)
 
-    if (existingOp) {
+    if (existingOp && existingOp.seq !== undefined) {
 
       const mergedPayload = {
         ...existingOp.payload,
         ...payload
       }
 
-      await db.opLog.update(existingOp.seq!, {
+      await db.opLog.update(existingOp.seq, {
         payload: mergedPayload
       })
 

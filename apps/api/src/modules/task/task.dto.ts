@@ -22,6 +22,13 @@ export const TaskPriorityEnum = z.enum([
 -------------------------------------------------- */
 
 export const CreateTaskDTO = z.object({
+
+  id: z
+    .string({
+      required_error: "Task id is required",
+    })
+    .regex(/^[0-9a-fA-F]{24}$/, "Invalid task id"),
+
   title: z
     .string({
       required_error: "Title is required",
@@ -34,7 +41,8 @@ export const CreateTaskDTO = z.object({
     .max(5000, "Description cannot exceed 5000 characters")
     .optional(),
 
-  priority: TaskPriorityEnum,
+  priority: TaskPriorityEnum.optional(),
+
 });
 
 /* --------------------------------------------------
@@ -43,6 +51,7 @@ export const CreateTaskDTO = z.object({
 
 export const UpdateTaskDTO = z
   .object({
+
     title: z
       .string()
       .min(1, "Title must be at least 1 character")
@@ -63,6 +72,7 @@ export const UpdateTaskDTO = z
       .regex(/^[0-9a-fA-F]{24}$/, "Assigned user must be valid ObjectId")
       .nullable()
       .optional(),
+
   })
   .refine(
     (data) => Object.keys(data).length > 0,

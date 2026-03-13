@@ -1,4 +1,4 @@
-import { v4 as uuid } from "uuid"
+import { ObjectId } from "bson"
 
 import {
   OperationType,
@@ -20,7 +20,7 @@ export function createTaskOperation(
 ): TaskCreateOperation {
 
   return {
-    opId: uuid(),
+    opId: new ObjectId().toHexString(),
 
     type: OperationType.TASK_CREATE,
 
@@ -48,7 +48,7 @@ export function updateTaskOperation(
 ): TaskUpdateOperation {
 
   return {
-    opId: uuid(),
+    opId: new ObjectId().toHexString(),
 
     type: OperationType.TASK_UPDATE,
 
@@ -79,7 +79,7 @@ export function deleteTaskOperation(
   }
 
   return {
-    opId: uuid(),
+    opId: new ObjectId().toHexString(),
 
     type: OperationType.TASK_DELETE,
 

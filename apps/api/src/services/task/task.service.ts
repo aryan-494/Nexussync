@@ -5,7 +5,6 @@ import { WorkspaceMemberModel } from "../../db/models/workspaceMember.model";
 
 /**
  * Map Mongo document -> API response
- * This prevents leaking _id to frontend
  */
 function mapTask(task: any) {
   return {
@@ -21,6 +20,7 @@ function mapTask(task: any) {
 }
 
 interface CreateTaskInput {
+  id: string;  // frontend generated id
   workspaceId: string;
   userId: string;
   role: "OWNER" | "MEMBER";
@@ -30,16 +30,38 @@ interface CreateTaskInput {
 }
 
 export async function createTask(input: CreateTaskInput) {
-  const { workspaceId, userId, title, description, priority } = input;
 
-  const task = await TaskModel.create({
-    workspaceId: new mongoose.Types.ObjectId(workspaceId),
-    title,
-    description: description ?? null,
-    priority: priority ?? "MEDIUM",
-    status: "BACKLOG",
-    createdBy: new mongoose.Types.ObjectId(userId),
-  });
+  const { id, workspaceId, userId, title, description, priority } = input;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new HttpError(
+      "Invalid task id",
+      400,
+      "INVALID_TASK_ID"
+    );
+  }
+
+  const task = await TaskModel.findOneAndUpdate(
+
+    { _id: new mongoose.Types.ObjectId(id) },
+
+    {
+      $setOnInsert: {
+        workspaceId: new mongoose.Types.ObjectId(workspaceId),
+        title,
+        description: description ?? null,
+        priority: priority ?? "MEDIUM",
+        status: "BACKLOG",
+        createdBy: new mongoose.Types.ObjectId(userId),
+      }
+    },
+
+    {
+      upsert: true,
+      new: true
+    }
+
+  );
 
   return mapTask(task);
 }
@@ -52,6 +74,7 @@ interface ListTasksInput {
 }
 
 export async function listTasks(input: ListTasksInput) {
+
   const { workspaceId, page, limit } = input;
 
   const skip = (page - 1) * limit;
@@ -61,12 +84,14 @@ export async function listTasks(input: ListTasksInput) {
   };
 
   const [tasks, total] = await Promise.all([
+
     TaskModel.find(filter)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit),
 
-    TaskModel.countDocuments(filter),
+    TaskModel.countDocuments(filter)
+
   ]);
 
   return {
@@ -83,6 +108,7 @@ interface GetTaskInput {
 }
 
 export async function getTaskById(input: GetTaskInput) {
+
   if (!mongoose.Types.ObjectId.isValid(input.taskId)) {
     throw new HttpError(
       "Task not found",
@@ -124,6 +150,7 @@ interface UpdateTaskInput {
 }
 
 export async function updateTask(input: UpdateTaskInput) {
+
   if (!mongoose.Types.ObjectId.isValid(input.taskId)) {
     throw new HttpError(
       "Task not found",
@@ -164,6 +191,7 @@ export async function updateTask(input: UpdateTaskInput) {
   }
 
   if (filteredUpdates.assignedTo) {
+
     if (!mongoose.Types.ObjectId.isValid(filteredUpdates.assignedTo)) {
       throw new HttpError(
         "Invalid assigned user",
@@ -184,9 +212,11 @@ export async function updateTask(input: UpdateTaskInput) {
         "INVALID_ASSIGNMENT"
       );
     }
+
   }
 
   task.set(filteredUpdates);
+
   await task.save();
 
   return mapTask(task);
@@ -199,6 +229,7 @@ interface DeleteTaskInput {
 }
 
 export async function deleteTask(input: DeleteTaskInput) {
+
   if (!mongoose.Types.ObjectId.isValid(input.taskId)) {
     throw new HttpError(
       "Task not found",

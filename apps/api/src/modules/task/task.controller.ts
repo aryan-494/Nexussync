@@ -7,7 +7,7 @@
 import { Request, Response, NextFunction } from "express";
 import * as taskService from "../../services/task/task.service";
 import { HttpError } from "../../errors";
-import { CreateTaskDTO , UpdateTaskDTO } from "./task.dto";
+import { CreateTaskDTO, UpdateTaskDTO } from "./task.dto";
 import { validateDTO } from "../../utils/validate";
 import { PaginationDTO } from "../../utils/pagination.dto";
 
@@ -40,16 +40,32 @@ export async function createTaskController(
 
     const { user, workspace, role } = requireFullContext(req);
 
-    // Validate request body
     const body = validateDTO(CreateTaskDTO, req.body);
 
+    if (!body.id) {
+      throw new HttpError(
+        "Task ID is required",
+        400,
+        "INVALID_TASK_ID"
+      );
+    }
+
     const task = await taskService.createTask({
+
+      id: body.id,   // <-- IMPORTANT (frontend id)
+
       workspaceId: workspace.id,
+
       userId: user.id,
+
       role,
+
       title: body.title,
+
       description: body.description,
+
       priority: body.priority,
+
     });
 
     res.status(201).json(task);
@@ -58,6 +74,7 @@ export async function createTaskController(
     next(err);
   }
 }
+
 /**
  * List Tasks
  */
@@ -67,13 +84,13 @@ export async function listTasksController(
   next: NextFunction
 ) {
   try {
+
     const { workspace, role } = requireFullContext(req);
 
-    // Validate and parse query params
     const pagination = validateDTO(PaginationDTO, req.query);
 
     const page = pagination.page;
-    const limit = Math.min(pagination.limit, 100); // hard safety cap
+    const limit = Math.min(pagination.limit, 100);
 
     const result = await taskService.listTasks({
       workspaceId: workspace.id,
@@ -83,6 +100,7 @@ export async function listTasksController(
     });
 
     res.json(result);
+
   } catch (err) {
     next(err);
   }
@@ -97,7 +115,9 @@ export async function getTaskController(
   next: NextFunction
 ) {
   try {
+
     const { workspace } = requireFullContext(req);
+
     const { id } = req.params;
 
     if (!id) {
@@ -114,6 +134,7 @@ export async function getTaskController(
     });
 
     res.json(task);
+
   } catch (err) {
     next(err);
   }
@@ -128,7 +149,9 @@ export async function updateTaskController(
   next: NextFunction
 ) {
   try {
+
     const { user, workspace, role } = requireFullContext(req);
+
     const { id } = req.params;
 
     if (!id) {
@@ -139,7 +162,6 @@ export async function updateTaskController(
       );
     }
 
-    // ✅ Validate body using DTO
     const updates = validateDTO(UpdateTaskDTO, req.body);
 
     const task = await taskService.updateTask({
@@ -151,6 +173,7 @@ export async function updateTaskController(
     });
 
     res.json(task);
+
   } catch (err) {
     next(err);
   }
@@ -165,7 +188,9 @@ export async function deleteTaskController(
   next: NextFunction
 ) {
   try {
+
     const { workspace, role } = requireFullContext(req);
+
     const { id } = req.params;
 
     if (!id) {
@@ -183,6 +208,7 @@ export async function deleteTaskController(
     });
 
     res.status(204).send();
+
   } catch (err) {
     next(err);
   }
