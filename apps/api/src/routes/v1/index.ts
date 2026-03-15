@@ -3,7 +3,8 @@ import { healthHandler } from "./health";
 import authRouter from "./auth";
 import protectedRouter from "./protected";
 import workspaceRouter from "./workspace.routes";
-  import taskRoutes from "./tasks";
+import taskRoutes from "./tasks";
+import syncRoutes from "../../modules/sync/sync.routes"
 
 export function v1Router() {
   const router = Router();
@@ -23,6 +24,9 @@ export function v1Router() {
 
 
 router.use("/tasks", taskRoutes);
+
+
+router.use("/sync", syncRoutes)
 
   return router;
 }
