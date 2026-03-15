@@ -25,7 +25,7 @@ export function v1Router() {
 
 router.use("/tasks", taskRoutes);
 
-
+// GET http://localhost:5000/api/v1/sync/pull?workspaceSlug=test&since=0&limit=50
 router.use("/sync", syncRoutes)
 
   return router;
