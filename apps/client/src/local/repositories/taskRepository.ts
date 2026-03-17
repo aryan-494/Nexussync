@@ -138,3 +138,72 @@ export async function getTasksLocal(workspaceSlug: string) {
     .equals(workspaceSlug)
     .toArray()
 }
+
+
+/* =================================
+   APPLY SERVER CHANGES
+================================= */
+
+export async function applyServerChanges(serverTasks: any[]) {
+
+  await db.transaction("rw", db.tasks, async () => {
+
+    for (const serverTask of serverTasks) {
+
+      const localTask = await db.tasks.get(serverTask.id)
+
+      // 🟢 CASE 1 — Task does not exist → insert
+      if (!localTask) {
+
+        if (serverTask.status === "DELETED") continue
+
+        await db.tasks.put({
+          id: serverTask.id,
+          workspaceSlug: serverTask.workspaceSlug,
+          title: serverTask.title,
+          description: serverTask.description,
+          status: serverTask.status,
+          priority: serverTask.priority,
+          createdBy: serverTask.createdBy ?? "server",
+          assignedTo: serverTask.assignedTo ?? undefined,
+          createdAt: Number(serverTask.createdAt),
+          updatedAt: Number(serverTask.updatedAt),
+          synced: true
+        })
+
+        continue
+      }
+
+      // 🔴 CASE 2 — Local has unsynced changes → SKIP
+      if (localTask.synced === false) {
+        continue
+      }
+
+      // 🔵 CASE 3 — Server is newer → overwrite
+      if (Number(serverTask.updatedAt) > localTask.updatedAt) {
+
+        // 🗑️ handle delete
+        if (serverTask.status === "DELETED") {
+          await db.tasks.delete(serverTask.id)
+          continue
+        }
+
+        await db.tasks.put({
+          id: serverTask.id,
+          workspaceSlug: serverTask.workspaceSlug,
+          title: serverTask.title,
+          description: serverTask.description,
+          status: serverTask.status,
+          priority: serverTask.priority,
+          createdBy: serverTask.createdBy ?? "server",
+          assignedTo: serverTask.assignedTo ?? undefined,
+          createdAt: Number(serverTask.createdAt),
+          updatedAt: Number(serverTask.updatedAt),
+          synced: true
+        })
+      }
+
+    }
+
+  })
+}
