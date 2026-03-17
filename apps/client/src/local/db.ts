@@ -55,22 +55,31 @@ export interface OperationLog {
 }
 
 /* ================================
+   Sync Meta (Cursor Storage)
+================================ */
+
+export interface SyncMeta {
+  key: string;
+  value: number;
+}
+
+/* ================================
    Dexie Database
 ================================ */
 
 class NexusSyncDB extends Dexie {
-
   tasks!: Table<LocalTask, string>;
   opLog!: Table<OperationLog, number>;
+  syncMeta!: Table<SyncMeta, string>;
 
   constructor() {
     super("nexussync");
 
-    this.version(1).stores({
-
+    this.version(2).stores({
       tasks: `
         id,
         workspaceSlug,
+        updatedAt,
         [workspaceSlug+status],
         [workspaceSlug+assignedTo]
       `,
@@ -83,8 +92,14 @@ class NexusSyncDB extends Dexie {
         workspaceSlug,
         synced
       `,
+
+      syncMeta: `
+        key
+      `
     });
   }
 }
 
 export const db = new NexusSyncDB();
+// add this line 👇
+;(window as any).db = db
