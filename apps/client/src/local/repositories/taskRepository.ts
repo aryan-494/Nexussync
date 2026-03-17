@@ -5,34 +5,25 @@ import {
   createTaskOperation,
   updateTaskOperation,
   deleteTaskOperation
-
 } from "../types/operationBuilders"
-
 
 import { OperationType } from "../types/operations"
 import type {
-
   TaskCreatePayload,
   TaskUpdatePayload
 } from "../types/operations"
-
-
 
 /* =================================
    HELPER: find pending update
 ================================= */
 
 async function findPendingUpdate(taskId: string) {
-
   return db.opLog
     .where("entityId")
     .equals(taskId)
     .and(op => op.type === OperationType.TASK_UPDATE && !op.synced)
     .first()
-
 }
-
-
 
 /* =================================
    CREATE TASK LOCAL
@@ -42,10 +33,9 @@ export async function createTaskLocal(
   workspaceSlug: string,
   payload: Omit<TaskCreatePayload, "id">
 ) {
-
   const taskId = new ObjectId().toHexString()
 
-  const now = new Date().toISOString()
+  const now = Date.now() // ✅ FIXED
 
   const task = {
     id: taskId,
@@ -53,8 +43,8 @@ export async function createTaskLocal(
     ...payload,
     status: "TODO",
     createdBy: "me",
-    createdAt: now,
-    updatedAt: now,
+    createdAt: now,     // ✅ FIXED
+    updatedAt: now,     // ✅ FIXED
     synced: false
   }
 
@@ -64,18 +54,12 @@ export async function createTaskLocal(
   })
 
   await db.transaction("rw", db.tasks, db.opLog, async () => {
-
     await db.tasks.add(task)
-
     await db.opLog.add(operation)
-
   })
 
   return task
-
 }
-
-
 
 /* =================================
    UPDATE TASK LOCAL
@@ -86,14 +70,13 @@ export async function updateTaskLocal(
   taskId: string,
   payload: TaskUpdatePayload
 ) {
-
-  const now = new Date().toISOString()
+  const now = Date.now() // ✅ FIXED
 
   await db.transaction("rw", db.tasks, db.opLog, async () => {
 
     await db.tasks.update(taskId, {
       ...payload,
-      updatedAt: now,
+      updatedAt: now,   // ✅ FIXED
       synced: false
     })
 
@@ -119,14 +102,9 @@ export async function updateTaskLocal(
       )
 
       await db.opLog.add(operation)
-
     }
-
   })
-
 }
-
-
 
 /* =================================
    DELETE TASK LOCAL
@@ -136,7 +114,6 @@ export async function deleteTaskLocal(
   workspaceSlug: string,
   taskId: string
 ) {
-
   const operation = deleteTaskOperation(workspaceSlug, taskId)
 
   await db.transaction("rw", db.tasks, db.opLog, async () => {
@@ -149,20 +126,15 @@ export async function deleteTaskLocal(
     await db.opLog.add(operation)
 
   })
-
 }
-
-
 
 /* =================================
    GET TASKS LOCAL
 ================================= */
 
 export async function getTasksLocal(workspaceSlug: string) {
-
   return db.tasks
     .where("workspaceSlug")
     .equals(workspaceSlug)
     .toArray()
-
 }

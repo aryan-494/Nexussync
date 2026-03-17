@@ -30,7 +30,7 @@ export function createTaskOperation(
 
     payload,
 
-    createdAt: new Date().toISOString(),
+    createdAt: Date.now(), // ✅ FIXED
 
     synced: false,
   }
@@ -58,7 +58,7 @@ export function updateTaskOperation(
 
     payload,
 
-    createdAt: new Date().toISOString(),
+    createdAt: Date.now(), // ✅ FIXED
 
     synced: false,
   }
@@ -89,7 +89,7 @@ export function deleteTaskOperation(
 
     payload,
 
-    createdAt: new Date().toISOString(),
+    createdAt: Date.now(), // ✅ FIXED (was wrong: new Date.now())
 
     synced: false,
   }

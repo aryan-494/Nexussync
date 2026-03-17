@@ -10,7 +10,7 @@ export interface BaseOperation {
   entityId: string
  workspaceSlug: string
   payload: unknown
-  createdAt: string
+  createdAt: number
   synced: boolean
   failed?: boolean
 }

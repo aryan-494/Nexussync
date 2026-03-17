@@ -1,27 +1,27 @@
-import Dexie from "dexie";
-import type { Table } from "dexie";
+import Dexie from "dexie"
+import type { Table } from "dexie"
 
 /* ================================
    Task Entity
 ================================ */
 
 export interface LocalTask {
-  id: string;
-  workspaceSlug: string;
+  id: string
+  workspaceSlug: string
 
-  title: string;
-  description?: string;
+  title: string
+  description?: string
 
-  status: string;
-  priority?: string;
+  status: string
+  priority?: string
 
-  createdBy: string;
-  assignedTo?: string;
+  createdBy: string
+  assignedTo?: string
 
-  createdAt: string;
-  updatedAt: string;
+  createdAt: number     // ✅ FIXED
+  updatedAt: number     // ✅ FIXED
 
-  synced: boolean;
+  synced: boolean
 }
 
 /* ================================
@@ -31,27 +31,27 @@ export interface LocalTask {
 export type OperationType =
   | "TASK_CREATE"
   | "TASK_UPDATE"
-  | "TASK_DELETE";
+  | "TASK_DELETE"
 
 /* ================================
    Operation Log Entity
 ================================ */
 
 export interface OperationLog {
-  seq?: number;
+  seq?: number
 
-  opId: string;
-  type: OperationType;
+  opId: string
+  type: OperationType
 
-  entityId: string;
-  workspaceSlug: string;
+  entityId: string
+  workspaceSlug: string
 
-  payload: unknown;
+  payload: unknown
 
-  createdAt: string;
+  createdAt: number     // ✅ FIXED
 
-  synced: boolean;
-  failed?: boolean;
+  synced: boolean
+  failed?: boolean
 }
 
 /* ================================
@@ -59,8 +59,8 @@ export interface OperationLog {
 ================================ */
 
 export interface SyncMeta {
-  key: string;
-  value: number;
+  key: string
+  value: number
 }
 
 /* ================================
@@ -68,14 +68,15 @@ export interface SyncMeta {
 ================================ */
 
 class NexusSyncDB extends Dexie {
-  tasks!: Table<LocalTask, string>;
-  opLog!: Table<OperationLog, number>;
-  syncMeta!: Table<SyncMeta, string>;
+  tasks!: Table<LocalTask, string>
+  opLog!: Table<OperationLog, number>
+  syncMeta!: Table<SyncMeta, string>
 
   constructor() {
-    super("nexussync");
+    super("nexussync")
 
-    this.version(2).stores({
+    this.version(2).stores({   // ✅ version bumped
+
       tasks: `
         id,
         workspaceSlug,
@@ -96,10 +97,11 @@ class NexusSyncDB extends Dexie {
       syncMeta: `
         key
       `
-    });
+    })
   }
 }
 
-export const db = new NexusSyncDB();
-// add this line 👇
+export const db = new NexusSyncDB()
+
+// 🔧 OPTIONAL (only for debugging in console)
 ;(window as any).db = db

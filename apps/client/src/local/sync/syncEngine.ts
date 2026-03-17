@@ -7,6 +7,10 @@ import {
 } from "../../api/task.api"
 
 import { setSyncStatus } from "./syncState"
+import * as taskRepository from "../repositories/taskRepository"
+import { syncMetaRepo } from "./syncMetaRepo"
+const API_BASE = "/api/v1"
+
 
 
 
@@ -118,8 +122,8 @@ async function processOperation(op: any) {
         priority: serverTask.priority,
         createdBy: "server",
         assignedTo: serverTask.assignedTo ?? undefined,
-        createdAt: serverTask.createdAt,
-        updatedAt: serverTask.updatedAt,
+        createdAt: Number(serverTask.createdAt),
+        updatedAt: Number(serverTask.updatedAt),
         synced: true
       })
 
@@ -142,8 +146,8 @@ async function processOperation(op: any) {
         priority: serverTask.priority,
         createdBy: "server",
         assignedTo: serverTask.assignedTo ?? undefined,
-        createdAt: serverTask.createdAt,
-        updatedAt: serverTask.updatedAt,
+        createdAt: Number(serverTask.createdAt),
+        updatedAt: Number(serverTask.updatedAt),
         synced: true
       })
 
@@ -254,6 +258,46 @@ async function cleanupOperations() {
 }
 
 
+
+export async function pullServerChanges(workspaceSlug: string) {
+  try {
+    let hasMore = true
+    const limit = 50
+
+    while (hasMore) {
+      // 1️⃣ Get cursor
+      const since = await syncMetaRepo.getLastPulledAt()
+
+      // 2️⃣ Call API
+      const res = await fetch(
+        `${API_BASE}/sync/pull?workspaceSlug=${workspaceSlug}&since=${since}&limit=${limit}`,
+        {
+          credentials: "include"
+        }
+      )
+
+      if (!res.ok) {
+        throw new Error("SYNC_PULL_FAILED")
+      }
+
+      const data = await res.json()
+
+      const { tasks, serverTime } = data
+
+      // 3️⃣ Merge changes
+      await taskRepository.applyServerChanges(tasks)
+
+      // 4️⃣ Update cursor
+      await syncMetaRepo.setLastPulledAt(serverTime)
+
+      // 5️⃣ Pagination check
+      hasMore = tasks.length === limit
+    }
+
+  } catch (error) {
+    console.error("Pull sync failed:", error)
+  }
+}
 
 /* =================================
    Sync engine runner
