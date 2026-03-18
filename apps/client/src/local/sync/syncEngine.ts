@@ -9,10 +9,8 @@ import {
 import { setSyncStatus } from "./syncState"
 import * as taskRepository from "../repositories/taskRepository"
 import { syncMetaRepo } from "./syncMetaRepo"
+
 const API_BASE = "/api/v1"
-
-
-
 
 /* =================================
    Retry with exponential backoff
@@ -26,27 +24,18 @@ async function retryWithBackoff<T>(
   let attempt = 0
 
   while (true) {
-
     try {
       return await fn()
     } catch (err) {
-
-      if (attempt >= maxRetries) {
-        throw err
-      }
+      if (attempt >= maxRetries) throw err
 
       const delay = Math.pow(2, attempt) * 1000
-
-      await new Promise(resolve =>
-        setTimeout(resolve, delay)
-      )
+      await new Promise(resolve => setTimeout(resolve, delay))
 
       attempt++
     }
   }
 }
-
-
 
 /* =================================
    Multi-tab sync protection
@@ -58,18 +47,14 @@ let isLeader = true
 let isRunning = false
 
 channel.onmessage = (event) => {
-
   if (event.data === "SYNC_LEADER") {
     isLeader = false
   }
-
 }
 
 function announceLeader() {
   channel.postMessage("SYNC_LEADER")
 }
-
-
 
 /* =================================
    Network state
@@ -78,8 +63,6 @@ function announceLeader() {
 function isOnline() {
   return navigator.onLine
 }
-
-
 
 /* =================================
    Fetch pending operations
@@ -94,10 +77,7 @@ async function getPendingOperations(limit = 10) {
     .sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0))
 
   return pending.slice(0, limit)
-
 }
-
-
 
 /* =================================
    Send operation to backend
@@ -122,14 +102,13 @@ async function processOperation(op: any) {
         priority: serverTask.priority,
         createdBy: "server",
         assignedTo: serverTask.assignedTo ?? undefined,
-        createdAt: Number(serverTask.createdAt),
-        updatedAt: Number(serverTask.updatedAt),
+        createdAt: new Date(serverTask.createdAt).getTime(), // ✅ FIX
+        updatedAt: new Date(serverTask.updatedAt).getTime(), // ✅ FIX
         synced: true
       })
 
       break
     }
-
 
     case "TASK_UPDATE": {
 
@@ -146,14 +125,13 @@ async function processOperation(op: any) {
         priority: serverTask.priority,
         createdBy: "server",
         assignedTo: serverTask.assignedTo ?? undefined,
-        createdAt: Number(serverTask.createdAt),
-        updatedAt: Number(serverTask.updatedAt),
+        createdAt: new Date(serverTask.createdAt).getTime(), // ✅ FIX
+        updatedAt: new Date(serverTask.updatedAt).getTime(), // ✅ FIX
         synced: true
       })
 
       break
     }
-
 
     case "TASK_DELETE": {
 
@@ -165,10 +143,9 @@ async function processOperation(op: any) {
 
       break
     }
-
   }
-
 }
+
 /* =================================
    Mark operation synced
 ================================ */
@@ -182,10 +159,7 @@ async function markSynced(op: any) {
   await db.tasks.update(op.entityId, {
     synced: true
   })
-
 }
-
-
 
 /* =================================
    Process queue
@@ -200,41 +174,30 @@ async function processQueue() {
   for (const op of operations) {
 
     try {
-
       await processOperation(op)
-
       await markSynced(op)
 
-      // process one operation per cycle
-      break
+      break // process 1 per cycle
 
     } catch (err: any) {
 
-      console.error("Sync failed", err)
-
-      const status =
-        err?.status ??
-        err?.response?.status
+      const status = err?.status ?? err?.response?.status
 
       if (status === 404 && op.type === "TASK_DELETE") {
 
-  await db.tasks.delete(op.entityId)
+        await db.tasks.delete(op.entityId)
 
-  await db.opLog.update(op.seq!, {
-    synced: true
-  })
+        await db.opLog.update(op.seq!, {
+          synced: true
+        })
 
-  continue
-}
+        continue
+      }
 
       break
     }
-
   }
-
 }
-
-
 
 /* =================================
    Cleanup old operations
@@ -254,43 +217,35 @@ async function cleanupOperations() {
     .filter((id): id is number => id !== undefined)
 
   await db.opLog.bulkDelete(ids)
-
 }
 
-
+/* =================================
+   Pull sync
+================================ */
 
 export async function pullServerChanges(workspaceSlug: string) {
+
   try {
     let hasMore = true
     const limit = 50
 
     while (hasMore) {
-      // 1️⃣ Get cursor
+
       const since = await syncMetaRepo.getLastPulledAt()
 
-      // 2️⃣ Call API
       const res = await fetch(
         `${API_BASE}/sync/pull?workspaceSlug=${workspaceSlug}&since=${since}&limit=${limit}`,
-        {
-          credentials: "include"
-        }
+        { credentials: "include" }
       )
 
-      if (!res.ok) {
-        throw new Error("SYNC_PULL_FAILED")
-      }
+      if (!res.ok) throw new Error("SYNC_PULL_FAILED")
 
-      const data = await res.json()
+      const { tasks, serverTime } = await res.json()
 
-      const { tasks, serverTime } = data
-
-      // 3️⃣ Merge changes
       await taskRepository.applyServerChanges(tasks)
 
-      // 4️⃣ Update cursor
       await syncMetaRepo.setLastPulledAt(serverTime)
 
-      // 5️⃣ Pagination check
       hasMore = tasks.length === limit
     }
 
@@ -303,21 +258,20 @@ export async function pullServerChanges(workspaceSlug: string) {
    Sync engine runner
 ================================ */
 
-export async function runSyncEngine() {
+export async function runSyncEngine(workspaceSlug: string) {
 
   if (!isLeader) return
-
   if (isRunning) return
-
   if (!isOnline()) return
 
   isRunning = true
-
   setSyncStatus("syncing")
 
   try {
 
     await processQueue()
+
+    await pullServerChanges(workspaceSlug) // ✅ FIX (VERY IMPORTANT)
 
     await cleanupOperations()
 
@@ -326,34 +280,27 @@ export async function runSyncEngine() {
   } catch (err) {
 
     console.error("Sync engine crashed", err)
-
     setSyncStatus("error")
 
   } finally {
 
     isRunning = false
-
   }
-
 }
-
-
 
 /* =================================
    Start sync engine
 ================================ */
 
-export async function startSyncEngine() {
+export async function startSyncEngine(workspaceSlug: string) {
 
   await db.open()
 
   announceLeader()
 
-  setInterval(runSyncEngine, 5000)
+  setInterval(() => runSyncEngine(workspaceSlug), 5000)
 
-  window.addEventListener(
-    "online",
-    runSyncEngine
+  window.addEventListener("online", () =>
+    runSyncEngine(workspaceSlug)
   )
-
 }
