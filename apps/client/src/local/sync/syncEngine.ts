@@ -292,15 +292,28 @@ export async function runSyncEngine(workspaceSlug: string) {
    Start sync engine
 ================================ */
 
+let syncInterval: any = null
+
 export async function startSyncEngine(workspaceSlug: string) {
 
   await db.open()
 
   announceLeader()
 
-  setInterval(() => runSyncEngine(workspaceSlug), 5000)
+  if (syncInterval) return // ✅ prevent duplicate intervals
 
-  window.addEventListener("online", () =>
+  syncInterval = setInterval(async () => {
+    await runSyncEngine(workspaceSlug)
+  }, 5000)
+
+  window.addEventListener("online", () => {
     runSyncEngine(workspaceSlug)
-  )
+  })
+}
+
+export function stopSyncEngine() {
+  if (syncInterval) {
+    clearInterval(syncInterval)
+    syncInterval = null
+  }
 }
