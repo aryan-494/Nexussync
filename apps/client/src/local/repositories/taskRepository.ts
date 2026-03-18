@@ -166,8 +166,8 @@ export async function applyServerChanges(serverTasks: any[]) {
           priority: serverTask.priority,
           createdBy: serverTask.createdBy ?? "server",
           assignedTo: serverTask.assignedTo ?? undefined,
-          createdAt: Number(serverTask.createdAt),
-          updatedAt: Number(serverTask.updatedAt),
+          createdAt: new Date(serverTask.createdAt).getTime(),  // ✅ FIX
+          updatedAt: new Date(serverTask.updatedAt).getTime(),  
           synced: true
         })
 
@@ -197,8 +197,8 @@ export async function applyServerChanges(serverTasks: any[]) {
           priority: serverTask.priority,
           createdBy: serverTask.createdBy ?? "server",
           assignedTo: serverTask.assignedTo ?? undefined,
-          createdAt: Number(serverTask.createdAt),
-          updatedAt: Number(serverTask.updatedAt),
+         createdAt: new Date(serverTask.createdAt).getTime(),  // ✅ FIX
+          updatedAt: new Date(serverTask.updatedAt).getTime(),  
           synced: true
         })
       }
