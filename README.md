@@ -2,19 +2,6 @@ NexusSync
 
 NexusSync is a production-grade SaaS application built to explore local-first architecture, offline correctness, and deterministic synchronization at scale.
 
-It is a systems-first product focused on how modern collaborative tools handle state, time, and consistency across devices.
-
-
-
-
-Why NexusSync?
-
-Traditional SaaS applications are server-authoritative:
-every action waits for the network
-offline behavior is fragile
-state correctness depends on latency
-NexusSync reverses this model.
-
 
 
 
