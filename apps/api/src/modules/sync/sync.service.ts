@@ -18,19 +18,21 @@ class SyncService {
       throw new Error("WORKSPACE_NOT_FOUND")
     }
 
-    if (!workspace.members.includes(userId)) {
-      throw new Error("WORKSPACE_ACCESS_DENIED")
-    }
+   const isMember = workspace.members.some(
+  (member: any) => member.toString() === userId
+)
 
+if (!isMember) {
+  throw new Error("WORKSPACE_ACCESS_DENIED")
+}
     const tasks = await TaskModel
-      .find({
-        workspaceId: workspace._id,
-        updatedAt: { $gt: new Date(since) }
-      })
-      .sort({ updatedAt: 1 })
-      .limit(limit)
-      .lean()
-
+  .find({
+    workspaceSlug: workspaceSlug, // ✅ IMPORTANT FIX
+    updatedAt: { $gt: since }     // ✅ number comparison
+  })
+  .sort({ updatedAt: 1 })
+  .limit(limit)
+  .lean()
     const serverTime = Date.now()
 
     return {

@@ -6,7 +6,7 @@ import { startSyncEngine } from "./local/sync/syncEngine"
   
 
 
-startSyncEngine();
+startSyncEngine("acme-inc") // ✅ start sync engine with default workspace slug
 createRoot(document.getElementById('root')!).render(
   
   <StrictMode>

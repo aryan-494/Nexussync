@@ -9,8 +9,7 @@ import {
 import { setSyncStatus } from "./syncState"
 import * as taskRepository from "../repositories/taskRepository"
 import { syncMetaRepo } from "./syncMetaRepo"
-
-const API_BASE = "/api/v1"
+const API_BASE = "http://localhost:3000/api/v1"
 
 /* =================================
    Retry with exponential backoff
@@ -224,6 +223,7 @@ async function cleanupOperations() {
 ================================ */
 
 export async function pullServerChanges(workspaceSlug: string) {
+  if (!workspaceSlug) return
 
   try {
     let hasMore = true
@@ -259,7 +259,7 @@ export async function pullServerChanges(workspaceSlug: string) {
 ================================ */
 
 export async function runSyncEngine(workspaceSlug: string) {
-
+     if (!workspaceSlug) return 
   if (!isLeader) return
   if (isRunning) return
   if (!isOnline()) return
