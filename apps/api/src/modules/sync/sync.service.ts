@@ -42,5 +42,4 @@ if (!isMember) {
   }
 
 }
-
 export const syncService = new SyncService()
