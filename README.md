@@ -5,12 +5,6 @@ NexusSync is a production-grade SaaS application built to explore local-first ar
 
 
 
-The browser is a first-class peer in a distributed system:
-
-UI updates instantly
-data survives refresh and offline usage
-synchronization happens in the background
-conflicts are resolved deterministically
 
 
 
