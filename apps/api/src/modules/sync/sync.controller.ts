@@ -2,34 +2,35 @@ import { Request, Response } from "express"
 import { syncService } from "./sync.service"
 import { PullSyncQuery } from "./sync.types"
 
-export const pullSyncController = async (req: Request, res: Response) => {
+export async function pullSyncController(
+  req: Request<{}, {}, {}, PullSyncQuery>,
+  res: Response
+) {
   try {
-    const { workspaceSlug, since, limit } = req.query as unknown as PullSyncQuery
+
+    const workspaceSlug = req.query.workspaceSlug as string
+    const since = Number(req.query.since)
+    const limit = Number(req.query.limit)
 
     const userId = (req as any).user?.id
+    if (!userId) {
+      return res.status(401).json({
+        code: "AUTH_REQUIRED"
+      })
+    }
 
     const result = await syncService.pullChanges({
       workspaceSlug,
-      since: Number(since),
-      limit: Number(limit) || 50,
+      since,
+      limit,
       userId
     })
 
     return res.json(result)
 
-  } catch (error: any) {
+  } catch (err) {
 
-    if (error.message === "WORKSPACE_NOT_FOUND") {
-      return res.status(404).json({
-        code: "WORKSPACE_NOT_FOUND"
-      })
-    }
-
-    if (error.message === "WORKSPACE_ACCESS_DENIED") {
-      return res.status(403).json({
-        code: "WORKSPACE_ACCESS_DENIED"
-      })
-    }
+    console.error(err)
 
     return res.status(500).json({
       code: "SYNC_PULL_FAILED"
