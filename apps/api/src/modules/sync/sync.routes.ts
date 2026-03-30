@@ -1,8 +1,14 @@
 import { Router } from "express"
 import { pullSyncController } from "./sync.controller"
+import { authMiddleware } from "../../middleware/auth.middleware" // ✅ import
 
-const router = Router()
+const router = Router();
 
-router.get("/pull", pullSyncController)
+router.get(
+  "/pull",
+  authMiddleware,
+  pullSyncController // ✅ THIS LINE FIXES EVERYTHING
+  
+)
 
 export default router

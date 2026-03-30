@@ -43,7 +43,8 @@ export function authMiddleware(
       id: payload.sub as string,
       email: payload.email as string,
     };
-
+console.log("AUTH MIDDLEWARE HIT")
+console.log("COOKIES:", req.cookies)
     next();
 
   } catch (err: any) {

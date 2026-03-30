@@ -12,7 +12,7 @@ export async function pullSyncController(
     const since = Number(req.query.since)
     const limit = Number(req.query.limit)
 
-    const userId = (req as any).user?.id
+    const userId = (req as any).context?.user?.id 
     if (!userId) {
       return res.status(401).json({
         code: "AUTH_REQUIRED"

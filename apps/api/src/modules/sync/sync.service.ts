@@ -21,22 +21,30 @@ class SyncService {
       throw new Error("WORKSPACE_NOT_FOUND")
     }
 
-    const members = (workspace as any).members as any[]
+let isMember = false
 
-const isMember = members.some((m) => {
-  if (!m) return false
+// Case 1: members exists
+if ((workspace as any).members && Array.isArray((workspace as any).members)) {
 
-  if (typeof m === "string") return m === userId
+  isMember = (workspace as any).members.some((m: any) => {
+    if (!m) return false
 
-  if (m.userId) return m.userId.toString() === userId
+    if (typeof m === "string") return m === userId
 
-  return m.toString() === userId
-})
+    if (m.userId) return m.userId.toString() === userId
 
+    return m.toString() === userId
+  })
+
+} else {
+  // ✅ Case 2: fallback to creator (YOUR CURRENT DB CASE)
+  isMember = workspace.createdBy.toString() === userId
+}
+
+// Final check
 if (!isMember) {
   throw new Error("WORKSPACE_ACCESS_DENIED")
 }
-
     const tasks = await TaskModel.find({
       workspaceSlug: workspaceSlug,
       updatedAt: { $gt: since }
