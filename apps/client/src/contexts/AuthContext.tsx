@@ -13,6 +13,7 @@ import {
 } from "../api/auth.api";
 
 import type { AppError } from "../api/http";
+import { connectSocket, disconnectSocket } from "../realtime/socket";
 
 type User = {
   id: string;
@@ -35,37 +36,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   // Verify session on mount
-  useEffect(() => {
+useEffect(() => {
+  async function verifySession() {
+    try {
+      const data = await getMe();
+      setUser(data);
 
-    async function verifySession() {
+      // ✅ connect socket after session restore
+      connectSocket();
 
-      try {
+    } catch (err) {
+      const error = err as AppError;
 
-        const data = await getMe();
-        setUser(data);
-
-      } catch (err) {
-
-        const error = err as AppError;
-
-        // Handle auth errors explicitly
-        if (
-          error.code === "AUTH_UNAUTHORIZED" ||
-          error.code === "AUTH_SESSION_EXPIRED"
-        ) {
-          setUser(null);
-        } else {
-          console.error("Auth verification error:", error);
-        }
-
-      } finally {
-        setLoading(false);
+      if (
+        error.code === "AUTH_UNAUTHORIZED" ||
+        error.code === "AUTH_SESSION_EXPIRED"
+      ) {
+        setUser(null);
+      } else {
+        console.error("Auth verification error:", error);
       }
+    } finally {
+      setLoading(false);
     }
+  }
 
-    verifySession();
-
-  }, []);
+  verifySession();
+}, []);
 
   async function login(email: string, password: string) {
 
@@ -75,6 +72,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const userData = await getMe();
       setUser(userData);
+        //  connect socket after login
+        connectSocket();
 
     } catch (err) {
 
@@ -94,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("Logout error:", err);
     } finally {
       setUser(null);
+      disconnectSocket();
     }
   }
 
