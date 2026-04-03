@@ -1,5 +1,6 @@
 import { Server as HttpServer } from "http";
 import { Server as IOServer } from "socket.io";
+import { socketAuthMiddleware } from "./socket.auth";
 
 let io: IOServer | null = null;
 
@@ -12,6 +13,7 @@ export function initSocketServer(server: HttpServer) {
   });
 
   console.log("[socket] server initialized");
+  io.use(socketAuthMiddleware);
 
   io.on("connection", (socket) => {
     console.log(`[socket] client connected: ${socket.id}`);
