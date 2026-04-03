@@ -55,7 +55,10 @@ useEffect(() => {
 
   console.log("[socket] joined workspace:", slug);
 
-
+  // ✅ temporary test trigger function (for console)
+  (window as any).testSocket = () => {
+    socket.emit("TEST_EVENT", slug);
+  };
 
 }, [slug]);
 

@@ -28,7 +28,16 @@ export function initSocketServer(server: HttpServer) {
     });
 
     
-  
+    socket.on("TEST_EVENT", (workspaceSlug: string) => {
+    const room = `workspace:${workspaceSlug}`;
+
+    console.log("[socket] test emit to:", room);
+
+    io?.to(room).emit("TASK_CHANGED", {
+      workspaceSlug,
+      type: "TASK_CHANGED",
+    });
+  });
 
     console.log(`[socket] client connected: ${socket.id}`);
 

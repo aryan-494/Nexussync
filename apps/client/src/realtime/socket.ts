@@ -13,7 +13,9 @@ export function connectSocket() {
     console.log("[socket] connected:", socket?.id);
 
   });
-
+  socket.on("TASK_CHANGED", (data) => {
+  console.log("[socket] TASK_CHANGED received:", data);
+});
 
   socket.on("disconnect", () => {
     console.log("[socket] disconnected");
