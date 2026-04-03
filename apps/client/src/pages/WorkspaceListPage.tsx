@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useWorkspace } from "../contexts/WorkspaceContext";
 
+
 export default function WorkspaceListPage() {
   const { workspaces, loading } = useWorkspace();
 

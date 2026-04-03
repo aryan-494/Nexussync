@@ -16,6 +16,20 @@ export function initSocketServer(server: HttpServer) {
   io.use(socketAuthMiddleware);
 
   io.on("connection", (socket) => {
+
+   socket.on("JOIN_WORKSPACE", (workspaceSlug: string) => {
+
+    const room = `workspace:${workspaceSlug}`;
+
+    socket.join(room);
+     console.log(
+    `[socket] user ${(socket as any).user?.id} joined ${room}`
+  );
+    });
+
+    
+  
+
     console.log(`[socket] client connected: ${socket.id}`);
 
     socket.on("disconnect", () => {

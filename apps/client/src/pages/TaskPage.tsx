@@ -11,6 +11,7 @@ import { useSyncStatus } from "../local/sync/syncState";
 import { updateTaskLocal} from "../local/repositories/taskRepository"
 
 import { useEffect } from "react";
+import { getSocket } from "../realtime/socket";
 
 export function TaskPage() {
 
@@ -40,9 +41,23 @@ export function TaskPage() {
     return <Navigate to="/workspaces" replace />;
   }
 
-  useEffect(() => {
-    hydrateWorkspace(slug);
-  }, [slug]);
+
+useEffect(() => {
+  if (!slug) return;
+
+  // existing logic
+  hydrateWorkspace(slug);
+
+  const socket = getSocket();
+
+  // ✅ join workspace
+  socket.emit("JOIN_WORKSPACE", slug);
+
+  console.log("[socket] joined workspace:", slug);
+
+
+
+}, [slug]);
 
   if (workspaceLoading) {
     return <div>Loading workspace...</div>;

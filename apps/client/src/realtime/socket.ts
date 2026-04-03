@@ -11,7 +11,9 @@ export function connectSocket() {
 
   socket.on("connect", () => {
     console.log("[socket] connected:", socket?.id);
+
   });
+
 
   socket.on("disconnect", () => {
     console.log("[socket] disconnected");
