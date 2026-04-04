@@ -1,6 +1,7 @@
 import { Server as HttpServer } from "http";
 import { Server as IOServer } from "socket.io";
 import { socketAuthMiddleware } from "./socket.auth";
+import { initChangeStreams } from "./socket.events";
 
 let io: IOServer | null = null;
 
@@ -32,8 +33,9 @@ export function initSocketServer(server: HttpServer) {
     const room = `workspace:${workspaceSlug}`;
 
     console.log("[socket] test emit to:", room);
+    initChangeStreams();
 
-    io?.to(room).emit("TASK_CHANGED", {
+  io?.to(room).emit("TASK_CHANGED", {
       workspaceSlug,
       type: "TASK_CHANGED",
     });
@@ -46,6 +48,7 @@ export function initSocketServer(server: HttpServer) {
     });
   });
 }
+
 
 export function getIO(): IOServer {
   if (!io) {
