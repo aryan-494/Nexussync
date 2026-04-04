@@ -234,6 +234,7 @@ export async function pullServerChanges(workspaceSlug: string) {
 
     while (hasMore) {
       const since = await syncMetaRepo.getLastPulledAt();
+      console.log("Pulling changes since:", since);
 
       const res = await fetch(
         `${API_BASE}/sync/pull?workspaceSlug=${workspaceSlug}&since=${since}&limit=${limit}`,
@@ -244,9 +245,10 @@ export async function pullServerChanges(workspaceSlug: string) {
 
       const { tasks, serverTime } = await res.json();
 
-      await taskRepository.applyServerChanges(tasks);
+      await taskRepository.applyServerChanges(tasks,workspaceSlug);
 
       await syncMetaRepo.setLastPulledAt(serverTime);
+      console.log("Saving since:", serverTime);
 
       hasMore = tasks.length === limit;
     }

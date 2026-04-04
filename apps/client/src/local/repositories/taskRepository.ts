@@ -144,66 +144,42 @@ export async function getTasksLocal(workspaceSlug: string) {
    APPLY SERVER CHANGES
 ================================= */
 
-export async function applyServerChanges(serverTasks: any[]) {
+export async function applyServerChanges(
+  serverTasks: any[],
+  workspaceSlug: string
+){
 
   await db.transaction("rw", db.tasks, async () => {
 
-    for (const serverTask of serverTasks) {
+    for (const raw of serverTasks) {
 
-      const localTask = await db.tasks.get(serverTask.id)
+  const serverTask = {
+    ...raw,
+    id: raw._id.toString(), // ✅ normalize
+  };
 
-      // 🟢 CASE 1 — Task does not exist → insert
-      if (!localTask) {
+  const localTask = await db.tasks.get(serverTask.id);
 
-        if (serverTask.status === "DELETED") continue
+  if (!localTask) {
 
-        await db.tasks.put({
-          id: serverTask.id,
-          workspaceSlug: serverTask.workspaceSlug,
-          title: serverTask.title,
-          description: serverTask.description,
-          status: serverTask.status,
-          priority: serverTask.priority,
-          createdBy: serverTask.createdBy ?? "server",
-          assignedTo: serverTask.assignedTo ?? undefined,
-          createdAt: new Date(serverTask.createdAt).getTime(),  // ✅ FIX
-          updatedAt: new Date(serverTask.updatedAt).getTime(),  
-          synced: true
-        })
+    if (serverTask.status === "DELETED") continue;
 
-        continue
-      }
+    await db.tasks.put({
+      id: serverTask.id,
+      workspaceSlug, // ✅ FIX
+      title: serverTask.title,
+      description: serverTask.description,
+      status: serverTask.status,
+      priority: serverTask.priority,
+      createdBy: serverTask.createdBy ?? "server",
+      assignedTo: serverTask.assignedTo ?? undefined,
+      createdAt: new Date(serverTask.createdAt).getTime(),
+      updatedAt: new Date(serverTask.updatedAt).getTime(),
+      synced: true
+    });
 
-      // 🔴 CASE 2 — Local has unsynced changes → SKIP
-      if (localTask.synced === false) {
-        continue
-      }
-
-      // 🔵 CASE 3 — Server is newer → overwrite
-      if (Number(serverTask.updatedAt) > localTask.updatedAt) {
-
-        // 🗑️ handle delete
-        if (serverTask.status === "DELETED") {
-          await db.tasks.delete(serverTask.id)
-          continue
-        }
-
-        await db.tasks.put({
-          id: serverTask.id,
-          workspaceSlug: serverTask.workspaceSlug,
-          title: serverTask.title,
-          description: serverTask.description,
-          status: serverTask.status,
-          priority: serverTask.priority,
-          createdBy: serverTask.createdBy ?? "server",
-          assignedTo: serverTask.assignedTo ?? undefined,
-         createdAt: new Date(serverTask.createdAt).getTime(),  // ✅ FIX
-          updatedAt: new Date(serverTask.updatedAt).getTime(),  
-          synced: true
-        })
-      }
-
-    }
-
+    continue;
+  }
+}
   })
 }
