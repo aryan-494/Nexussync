@@ -2,6 +2,12 @@ import { Server as HttpServer } from "http";
 import { Server as IOServer } from "socket.io";
 import { socketAuthMiddleware } from "./socket.auth";
 import { initChangeStreams } from "./socket.events";
+import {
+  addUserToWorkspace,
+  removeUserFromWorkspace,
+  getUsersInWorkspace,
+  getAllWorkspaces
+} from "./presence";
 
 let io: IOServer | null = null;
 
@@ -23,9 +29,24 @@ export function initSocketServer(server: HttpServer) {
     const room = `workspace:${workspaceSlug}`;
 
     socket.join(room);
+
      console.log(
     `[socket] user ${(socket as any).user?.id} joined ${room}`
   );
+
+
+  const userId = (socket as any).user?.id;
+  // tarck presence 
+  addUserToWorkspace(workspaceSlug , userId );
+
+  const users = getUsersInWorkspace(workspaceSlug);
+  console.log("[presence] users in", workspaceSlug, users);
+
+  io?.to(room).emit("PRESENCE_UPADTED",{
+    workspaceSlug,
+    users
+  });
+
     });
 
     
@@ -44,8 +65,23 @@ export function initSocketServer(server: HttpServer) {
     console.log(`[socket] client connected: ${socket.id}`);
 
     socket.on("disconnect", () => {
-      console.log(`[socket] client disconnected: ${socket.id}`);
+  const userId = (socket as any).user?.id;
+
+  // remove from all workspaces
+  for (const workspaceSlug of getAllWorkspaces()) {
+
+    removeUserFromWorkspace(workspaceSlug, userId);
+
+    const room = `workspace:${workspaceSlug}`;
+
+    io?.to(room).emit("PRESENCE_UPDATE", {
+      workspaceSlug,
+      users: getUsersInWorkspace(workspaceSlug),
     });
+  }
+
+  console.log(`[socket] client disconnected: ${socket.id}`);
+});
   });
 }
 

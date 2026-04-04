@@ -12,8 +12,12 @@ import { updateTaskLocal} from "../local/repositories/taskRepository"
 
 import { useEffect } from "react";
 import { getSocket } from "../realtime/socket";
+import { useState } from "react";
 
 export function TaskPage() {
+
+
+  const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
 
   const { slug } = useParams();
 
@@ -45,23 +49,32 @@ export function TaskPage() {
 useEffect(() => {
   if (!slug) return;
 
-  // existing logic
+  // hydrate local DB
   hydrateWorkspace(slug);
 
   const socket = getSocket();
 
-  // ✅ join workspace
+  // join workspace
   socket.emit("JOIN_WORKSPACE", slug);
-
   console.log("[socket] joined workspace:", slug);
 
-  // ✅ temporary test trigger function (for console)
-  (window as any).testSocket = () => {
-    socket.emit("TEST_EVENT", slug);
+  // listen for presence updates
+  const handlePresence = (data: any) => {
+    console.log("[presence] update:", data);
+
+    if (data.workspaceSlug === slug) {
+      setOnlineUsers(data.users);
+    }
+  };
+
+  socket.on("PRESENCE_UPDATE", handlePresence);
+
+  // cleanup (VERY IMPORTANT)
+  return () => {
+    socket.off("PRESENCE_UPDATE", handlePresence);
   };
 
 }, [slug]);
-
   if (workspaceLoading) {
     return <div>Loading workspace...</div>;
   }
@@ -105,6 +118,8 @@ useEffect(() => {
       <p>
         Sync status: {syncStatus}
       </p>
+
+      <p>Online users: {onlineUsers.length}</p>
 
       <TaskForm onCreate={handleCreate} />
 

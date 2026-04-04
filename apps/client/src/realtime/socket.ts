@@ -7,10 +7,8 @@ let socket: Socket | null = null;
 let isSyncing = false;
 let timeout: ReturnType<typeof setTimeout> | null = null;
 
-
 export function connectSocket() {
-
-  if (socket) return socket; // prevent multiple connections
+  if (socket) return socket;
 
   socket = io("http://localhost:3000", {
     withCredentials: true,
@@ -20,15 +18,22 @@ export function connectSocket() {
     console.log("[socket] connected:", socket?.id);
   });
 
-  // ✅ prevent duplicate listeners
+  socket.on("disconnect", () => {
+    console.log("[socket] disconnected");
+  });
+
+  // ===============================
+  // TASK SYNC (REALTIME)
+  // ===============================
+
   socket.off("TASK_CHANGED");
 
   socket.on("TASK_CHANGED", (data) => {
     console.log("[socket] TASK_CHANGED received:", data);
 
     const { workspaceSlug } = data;
-console.log("[socket] triggering sync for:", workspaceSlug);
-    // debounce events
+
+    // debounce
     if (timeout) clearTimeout(timeout);
 
     timeout = setTimeout(async () => {
@@ -38,17 +43,24 @@ console.log("[socket] triggering sync for:", workspaceSlug);
 
       try {
         await runSyncEngine(workspaceSlug);
-
       } catch (err) {
         console.error("[socket] sync failed:", err);
       } finally {
         isSyncing = false;
       }
-    }, 300); // 300ms debounce
+    }, 300);
   });
 
-  socket.on("disconnect", () => {
-    console.log("[socket] disconnected");
+  // ===============================
+  // PRESENCE (NEW)
+  // ===============================
+
+  socket.off("PRESENCE_UPDATE");
+
+  socket.on("PRESENCE_UPDATE", (data) => {
+    console.log("[presence] update:", data);
+    // ⚠️ DO NOT update UI here
+    // UI handles this in TaskPage
   });
 
   return socket;
