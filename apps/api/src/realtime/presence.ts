@@ -1,4 +1,4 @@
-
+/* 
 
 
 const workspacePresence = new Map<string, Set<string>>();
@@ -27,4 +27,34 @@ export function getUsersInWorkspace(workspaceSlug:string):string[]{
 
 export function getAllWorkspaces(){
     return Array.from(workspacePresence.keys());
+}
+ */
+
+
+
+
+import { redis } from "./redis";
+
+function getKey(workspaceSlug: string) {
+  return `presence:workspace:${workspaceSlug}`;
+}
+
+export async function addUserToWorkspace(
+  workspaceSlug: string,
+  userId: string
+) {
+  await redis.sadd(getKey(workspaceSlug), userId);
+}
+
+export async function removeUserFromWorkspace(
+  workspaceSlug: string,
+  userId: string
+) {
+  await redis.srem(getKey(workspaceSlug), userId);
+}
+
+export async function getUsersInWorkspace(
+  workspaceSlug: string
+): Promise<string[]> {
+  return await redis.smembers(getKey(workspaceSlug));
 }

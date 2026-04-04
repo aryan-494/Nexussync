@@ -2,11 +2,11 @@ import { Server as HttpServer } from "http";
 import { Server as IOServer } from "socket.io";
 import { socketAuthMiddleware } from "./socket.auth";
 import { initChangeStreams } from "./socket.events";
+
 import {
   addUserToWorkspace,
   removeUserFromWorkspace,
   getUsersInWorkspace,
-  getAllWorkspaces
 } from "./presence";
 
 let io: IOServer | null = null;
@@ -20,71 +20,90 @@ export function initSocketServer(server: HttpServer) {
   });
 
   console.log("[socket] server initialized");
+
   io.use(socketAuthMiddleware);
+
+  // ✅ INIT change streams ONCE (not inside event)
+  initChangeStreams();
 
   io.on("connection", (socket) => {
 
-   socket.on("JOIN_WORKSPACE", (workspaceSlug: string) => {
-
-    const room = `workspace:${workspaceSlug}`;
-
-    socket.join(room);
-
-     console.log(
-    `[socket] user ${(socket as any).user?.id} joined ${room}`
-  );
-
-
-  const userId = (socket as any).user?.id;
-  // tarck presence 
-  addUserToWorkspace(workspaceSlug , userId );
-
-  const users = getUsersInWorkspace(workspaceSlug);
-  console.log("[presence] users in", workspaceSlug, users);
-
-  io?.to(room).emit("PRESENCE_UPADTED",{
-    workspaceSlug,
-    users
-  });
-
-    });
-
-    
-    socket.on("TEST_EVENT", (workspaceSlug: string) => {
-    const room = `workspace:${workspaceSlug}`;
-
-    console.log("[socket] test emit to:", room);
-    initChangeStreams();
-
-  io?.to(room).emit("TASK_CHANGED", {
-      workspaceSlug,
-      type: "TASK_CHANGED",
-    });
-  });
-
     console.log(`[socket] client connected: ${socket.id}`);
 
-    socket.on("disconnect", () => {
-  const userId = (socket as any).user?.id;
+    // 🔒 track workspaces per socket
+    (socket as any).joinedWorkspaces = new Set<string>();
 
-  // remove from all workspaces
-  for (const workspaceSlug of getAllWorkspaces()) {
+    // ===============================
+    // JOIN WORKSPACE
+    // ===============================
+    socket.on("JOIN_WORKSPACE", async (workspaceSlug: string) => {
 
-    removeUserFromWorkspace(workspaceSlug, userId);
+      const room = `workspace:${workspaceSlug}`;
+      socket.join(room);
 
-    const room = `workspace:${workspaceSlug}`;
+      const userId = (socket as any).user?.id;
 
-    io?.to(room).emit("PRESENCE_UPDATE", {
-      workspaceSlug,
-      users: getUsersInWorkspace(workspaceSlug),
+      console.log(`[socket] user ${userId} joined ${room}`);
+
+      // track for disconnect cleanup
+      (socket as any).joinedWorkspaces.add(workspaceSlug);
+
+      // ✅ Redis: add user
+      await addUserToWorkspace(workspaceSlug, userId);
+
+      // ✅ Redis: get users
+      const users = await getUsersInWorkspace(workspaceSlug);
+
+      console.log("[presence] users in", workspaceSlug, users);
+
+      // ✅ FIXED event name
+      io?.to(room).emit("PRESENCE_UPDATE", {
+        workspaceSlug,
+        users,
+      });
     });
-  }
 
-  console.log(`[socket] client disconnected: ${socket.id}`);
-});
+    // ===============================
+    // TEST EVENT (keep for debug)
+    // ===============================
+    socket.on("TEST_EVENT", (workspaceSlug: string) => {
+      const room = `workspace:${workspaceSlug}`;
+
+      console.log("[socket] test emit to:", room);
+
+      io?.to(room).emit("TASK_CHANGED", {
+        workspaceSlug,
+        type: "TASK_CHANGED",
+      });
+    });
+
+    // ===============================
+    // DISCONNECT
+    // ===============================
+    socket.on("disconnect", async () => {
+
+      const userId = (socket as any).user?.id;
+      const workspaces = (socket as any).joinedWorkspaces || [];
+
+      for (const workspaceSlug of workspaces) {
+
+        // ✅ Redis: remove user
+        await removeUserFromWorkspace(workspaceSlug, userId);
+
+        // ✅ Redis: get updated users
+        const users = await getUsersInWorkspace(workspaceSlug);
+
+        io?.to(`workspace:${workspaceSlug}`).emit("PRESENCE_UPDATE", {
+          workspaceSlug,
+          users,
+        });
+      }
+
+      console.log(`[socket] client disconnected: ${socket.id}`);
+    });
+
   });
 }
-
 
 export function getIO(): IOServer {
   if (!io) {
