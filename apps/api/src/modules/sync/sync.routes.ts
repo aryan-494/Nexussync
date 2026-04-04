@@ -7,8 +7,7 @@ const router = Router();
 router.get(
   "/pull",
   authMiddleware,
-  pullSyncController // ✅ THIS LINE FIXES EVERYTHING
-  
+  pullSyncController 
 )
 
 export default router

@@ -1,39 +1,39 @@
-import { Request, Response } from "express"
+
 import { syncService } from "./sync.service"
 import { PullSyncQuery } from "./sync.types"
+import { Request, Response, NextFunction } from "express";
+
+
 
 export async function pullSyncController(
-  req: Request<{}, {}, {}, PullSyncQuery>,
-  res: Response
+  req: Request,
+  res: Response,
+  next: NextFunction
 ) {
   try {
 
-    const workspaceSlug = req.query.workspaceSlug as string
-    const since = Number(req.query.since)
-    const limit = Number(req.query.limit)
+    const { workspaceSlug, since, limit } =
+      req.query as unknown as PullSyncQuery;
 
-    const userId = (req as any).context?.user?.id 
+    const userId = (req as any).context?.user?.id;
+
     if (!userId) {
       return res.status(401).json({
-        code: "AUTH_REQUIRED"
-      })
+        code: "AUTH_REQUIRED",
+      });
     }
 
     const result = await syncService.pullChanges({
       workspaceSlug,
-      since,
-      limit,
-      userId
-    })
+      since: Number(since),
+      limit: Number(limit),
+      userId,
+    });
 
-    return res.json(result)
+    return res.json(result);
 
   } catch (err) {
-
-    console.error(err)
-
-    return res.status(500).json({
-      code: "SYNC_PULL_FAILED"
-    })
+    console.error(err);
+    next(err); 
   }
 }

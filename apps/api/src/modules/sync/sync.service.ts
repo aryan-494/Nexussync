@@ -46,8 +46,8 @@ if (!isMember) {
   throw new Error("WORKSPACE_ACCESS_DENIED")
 }
     const tasks = await TaskModel.find({
-      workspaceSlug: workspaceSlug,
-      updatedAt: { $gt: since }
+      workspaceId: workspace._id,
+      updatedAt: { $gte: new Date(since) }    // $gt → safer for duplicates $gte → safer for missing data
     })
       .sort({ updatedAt: 1 })
       .limit(limit)

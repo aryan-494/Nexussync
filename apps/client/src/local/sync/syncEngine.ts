@@ -221,39 +221,42 @@ async function cleanupOperations() {
 /* =================================
    Pull sync
 ================================ */
-
+let isPulling = false;
 export async function pullServerChanges(workspaceSlug: string) {
-  if (!workspaceSlug) return
+  if (!workspaceSlug) return;
+
+  if (isPulling) return; // ✅ prevent duplicate sync
+  isPulling = true;
 
   try {
-    let hasMore = true
-    const limit = 50
+    let hasMore = true;
+    const limit = 50;
 
     while (hasMore) {
-
-      const since = await syncMetaRepo.getLastPulledAt()
+      const since = await syncMetaRepo.getLastPulledAt();
 
       const res = await fetch(
         `${API_BASE}/sync/pull?workspaceSlug=${workspaceSlug}&since=${since}&limit=${limit}`,
         { credentials: "include" }
-      )
+      );
 
-      if (!res.ok) throw new Error("SYNC_PULL_FAILED")
+      if (!res.ok) throw new Error("SYNC_PULL_FAILED");
 
-      const { tasks, serverTime } = await res.json()
+      const { tasks, serverTime } = await res.json();
 
-      await taskRepository.applyServerChanges(tasks)
+      await taskRepository.applyServerChanges(tasks);
 
-      await syncMetaRepo.setLastPulledAt(serverTime)
+      await syncMetaRepo.setLastPulledAt(serverTime);
 
-      hasMore = tasks.length === limit
+      hasMore = tasks.length === limit;
     }
 
   } catch (error) {
-    console.error("Pull sync failed:", error)
+    console.error("Pull sync failed:", error);
+  } finally {
+    isPulling = false; // ✅ release lock
   }
 }
-
 /* =================================
    Sync engine runner
 ================================ */
