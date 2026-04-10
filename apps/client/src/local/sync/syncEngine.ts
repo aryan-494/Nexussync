@@ -282,7 +282,7 @@ export async function runSyncEngine(workspaceSlug: string) {
 
     setSyncStatus("idle")
 
-  } catch (err) {
+  }catch (err) {
 
     console.error("Sync engine crashed", err)
     setSyncStatus("error")

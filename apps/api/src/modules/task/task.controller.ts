@@ -10,6 +10,7 @@ import { HttpError } from "../../errors";
 import { CreateTaskDTO, UpdateTaskDTO } from "./task.dto";
 import { validateDTO } from "../../utils/validate";
 import { PaginationDTO } from "../../utils/pagination.dto";
+import { idempotencyService } from "../../modules/idempotency/idempotency.service";
 
 /**
  * Utility to safely extract fully-built context
