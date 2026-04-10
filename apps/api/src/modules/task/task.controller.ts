@@ -42,6 +42,7 @@ export async function createTaskController(
     const { user, workspace, role } = requireFullContext(req);
 
     const body = validateDTO(CreateTaskDTO, req.body);
+   // const { id } = req.params;
 
     if (!body.id) {
       throw new HttpError(
@@ -49,6 +50,29 @@ export async function createTaskController(
         400,
         "INVALID_TASK_ID"
       );
+    }
+
+    // 🔹 Idempotency check
+    const opId = body.opId;
+
+    if (!opId) {
+      throw new HttpError(
+        "opId is required",
+        400,
+        "INVALID_OPERATION_ID"
+      );
+    }
+
+    const isNew = await idempotencyService.ensureIdempotent(
+      opId,
+      user.id,
+      workspace.id
+    );
+
+    if (!isNew) {
+      return res.status(200).json({
+        status: "duplicate_ignored",
+      });
     }
 
     const task = await taskService.createTask({
@@ -165,6 +189,29 @@ export async function updateTaskController(
 
     const updates = validateDTO(UpdateTaskDTO, req.body);
 
+    // 🔹 Idempotency check
+    const opId = updates.opId;
+
+    if (!opId) {
+      throw new HttpError(
+        "opId is required",
+        400,
+        "INVALID_OPERATION_ID"
+      );
+    }
+
+    const isNew = await idempotencyService.ensureIdempotent(
+      opId,
+      user.id,
+      workspace.id
+    );
+
+    if (!isNew) {
+      return res.status(200).json({
+        status: "duplicate_ignored",
+      });
+    }
+
     const task = await taskService.updateTask({
       workspaceId: workspace.id,
       userId: user.id,
@@ -190,7 +237,7 @@ export async function deleteTaskController(
 ) {
   try {
 
-    const { workspace, role } = requireFullContext(req);
+    const { user, workspace, role } = requireFullContext(req);
 
     const { id } = req.params;
 
@@ -200,6 +247,28 @@ export async function deleteTaskController(
         400,
         "INVALID_TASK_ID"
       );
+    }
+
+    const { opId } = req.body;
+
+    if (!opId) {
+      throw new HttpError(
+        "opId is required",
+        400,
+        "INVALID_OPERATION_ID"
+      );
+    }
+
+    const isNew = await idempotencyService.ensureIdempotent(
+      opId,
+      user.id,
+      workspace.id
+    );
+
+    if (!isNew) {
+      return res.status(200).json({
+        status: "duplicate_ignored",
+      });
     }
 
     await taskService.deleteTask({
