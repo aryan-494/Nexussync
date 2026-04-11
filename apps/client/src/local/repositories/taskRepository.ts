@@ -14,9 +14,34 @@ import type {
 } from "../types/operations"
 
 /* =================================
-   HELPER: find pending update
+   HELPERS
 ================================= */
 
+// 🔥 ensure retry system works
+function withDefaults(op: any) {
+  return {
+    ...op,
+    synced: false,
+    failed: false,
+    retryCount: 0,
+    lastTriedAt: 0,
+  }
+}
+
+// 🔥 clean duplicate / redundant ops
+async function clearPendingOps(taskId: string) {
+  const existing = await db.opLog
+    .where("entityId")
+    .equals(taskId)
+    .and(op => !op.synced)
+    .toArray()
+
+  if (existing.length > 0) {
+    await db.opLog.bulkDelete(existing.map(op => op.seq!))
+  }
+}
+
+// existing helper (kept)
 async function findPendingUpdate(taskId: string) {
   return db.opLog
     .where("entityId")
@@ -34,8 +59,7 @@ export async function createTaskLocal(
   payload: Omit<TaskCreatePayload, "id">
 ) {
   const taskId = new ObjectId().toHexString()
-
-  const now = Date.now() // ✅ FIXED
+  const now = Date.now()
 
   const task = {
     id: taskId,
@@ -43,8 +67,8 @@ export async function createTaskLocal(
     ...payload,
     status: "TODO",
     createdBy: "me",
-    createdAt: now,     // ✅ FIXED
-    updatedAt: now,     // ✅ FIXED
+    createdAt: now,
+    updatedAt: now,
     synced: false
   }
 
@@ -54,8 +78,12 @@ export async function createTaskLocal(
   })
 
   await db.transaction("rw", db.tasks, db.opLog, async () => {
+
     await db.tasks.add(task)
-    await db.opLog.add(operation)
+
+    await db.opLog.add(
+      withDefaults(operation) // ✅ FIX
+    )
   })
 
   return task
@@ -70,13 +98,13 @@ export async function updateTaskLocal(
   taskId: string,
   payload: TaskUpdatePayload
 ) {
-  const now = Date.now() // ✅ FIXED
+  const now = Date.now()
 
   await db.transaction("rw", db.tasks, db.opLog, async () => {
 
     await db.tasks.update(taskId, {
       ...payload,
-      updatedAt: now,   // ✅ FIXED
+      updatedAt: now,
       synced: false
     })
 
@@ -86,7 +114,8 @@ export async function updateTaskLocal(
 
       const mergedPayload = {
         ...existingOp.payload,
-        ...payload
+        ...payload,
+        updatedAt: now // 🔥 FIX
       }
 
       await db.opLog.update(existingOp.seq, {
@@ -101,7 +130,9 @@ export async function updateTaskLocal(
         payload
       )
 
-      await db.opLog.add(operation)
+      await db.opLog.add(
+        withDefaults(operation) // ✅ FIX
+      )
     }
   })
 }
@@ -123,8 +154,12 @@ export async function deleteTaskLocal(
       synced: false
     })
 
-    await db.opLog.add(operation)
+    // 🔥 CRITICAL FIX — remove old ops
+    await clearPendingOps(taskId)
 
+    await db.opLog.add(
+      withDefaults(operation) // ✅ FIX
+    )
   })
 }
 
@@ -139,7 +174,6 @@ export async function getTasksLocal(workspaceSlug: string) {
     .toArray()
 }
 
-
 /* =================================
    APPLY SERVER CHANGES
 ================================= */
@@ -147,39 +181,39 @@ export async function getTasksLocal(workspaceSlug: string) {
 export async function applyServerChanges(
   serverTasks: any[],
   workspaceSlug: string
-){
+) {
 
   await db.transaction("rw", db.tasks, async () => {
 
     for (const raw of serverTasks) {
 
-  const serverTask = {
-    ...raw,
-    id: raw._id.toString(), // ✅ normalize
-  };
+      const serverTask = {
+        ...raw,
+        id: raw._id.toString(),
+      }
 
-  const localTask = await db.tasks.get(serverTask.id);
+      const localTask = await db.tasks.get(serverTask.id)
 
-  if (!localTask) {
+      if (!localTask) {
 
-    if (serverTask.status === "DELETED") continue;
+        if (serverTask.status === "DELETED") continue
 
-    await db.tasks.put({
-      id: serverTask.id,
-      workspaceSlug, // ✅ FIX
-      title: serverTask.title,
-      description: serverTask.description,
-      status: serverTask.status,
-      priority: serverTask.priority,
-      createdBy: serverTask.createdBy ?? "server",
-      assignedTo: serverTask.assignedTo ?? undefined,
-      createdAt: new Date(serverTask.createdAt).getTime(),
-      updatedAt: new Date(serverTask.updatedAt).getTime(),
-      synced: true
-    });
+        await db.tasks.put({
+          id: serverTask.id,
+          workspaceSlug,
+          title: serverTask.title,
+          description: serverTask.description,
+          status: serverTask.status,
+          priority: serverTask.priority,
+          createdBy: serverTask.createdBy ?? "server",
+          assignedTo: serverTask.assignedTo ?? undefined,
+          createdAt: new Date(serverTask.createdAt).getTime(),
+          updatedAt: new Date(serverTask.updatedAt).getTime(),
+          synced: true
+        })
 
-    continue;
-  }
-}
+        continue
+      }
+    }
   })
 }

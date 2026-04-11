@@ -17,21 +17,40 @@ const API_BASE = "http://localhost:3000/api/v1"
 
 async function retryWithBackoff<T>(
   fn: () => Promise<T>,
-  maxRetries = 3
+  options?: {
+    maxRetries?: number;
+    shouldRetry?: (err: any) => boolean;
+  }
 ): Promise<T> {
 
-  let attempt = 0
+  const maxRetries = options?.maxRetries ?? 5;
+
+  let attempt = 0;
 
   while (true) {
     try {
-      return await fn()
-    } catch (err) {
-      if (attempt >= maxRetries) throw err
+      return await fn();
+    } catch (err: any) {
 
-      const delay = Math.pow(2, attempt) * 1000
-      await new Promise(resolve => setTimeout(resolve, delay))
+      const shouldRetry =
+        options?.shouldRetry?.(err) ??
+        (!err.response || err.response.status >= 500);
 
-      attempt++
+      if (!shouldRetry) {
+        throw err; // ❌ permanent failure
+      }
+
+      if (attempt >= maxRetries) {
+        throw err;
+      }
+
+      const delay = [1000, 2000, 5000, 10000, 30000][
+        Math.min(attempt, 4)
+      ];
+
+      await new Promise((resolve) => setTimeout(resolve, delay));
+
+      attempt++;
     }
   }
 }
@@ -69,13 +88,13 @@ function isOnline() {
 
 async function getPendingOperations(limit = 10) {
 
-  const ops = await db.opLog.toArray()
+  const ops = await db.opLog
+    .toArray()
 
-  const pending = ops
+  return ops
     .filter(op => !op.synced && !op.failed)
     .sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0))
-
-  return pending.slice(0, limit)
+    .slice(0, limit)
 }
 
 /* =================================
@@ -83,68 +102,90 @@ async function getPendingOperations(limit = 10) {
 ================================ */
 
 async function processOperation(op: any) {
+   console.log("PROCESSING OP:", op.opId)
 
-  switch (op.type) {
+  try {
 
-    case "TASK_CREATE": {
+    switch (op.type) {
 
-      const serverTask = await retryWithBackoff(() =>
-        createTask(op.workspaceSlug, op.payload)
-      )
+      case "TASK_CREATE": {
 
-      await db.tasks.put({
-        id: serverTask.id,
-        workspaceSlug: op.workspaceSlug,
-        title: serverTask.title,
-        description: serverTask.description,
-        status: serverTask.status,
-        priority: serverTask.priority,
-        createdBy: "server",
-        assignedTo: serverTask.assignedTo ?? undefined,
-        createdAt: new Date(serverTask.createdAt).getTime(), // ✅ FIX
-        updatedAt: new Date(serverTask.updatedAt).getTime(), // ✅ FIX
-        synced: true
-      })
+        const serverTask = await createTask(
+          op.workspaceSlug,
+          op.payload
+        )
 
-      break
+        await db.tasks.put({
+          id: serverTask.id,
+          workspaceSlug: op.workspaceSlug,
+          title: serverTask.title,
+          description: serverTask.description,
+          status: serverTask.status,
+          priority: serverTask.priority,
+          createdBy: "server",
+          assignedTo: serverTask.assignedTo ?? undefined,
+          createdAt: new Date(serverTask.createdAt).getTime(),
+          updatedAt: new Date(serverTask.updatedAt).getTime(),
+          synced: true
+        })
+
+        break
+      }
+
+      case "TASK_UPDATE": {
+
+        const serverTask = await updateTask(
+          op.workspaceSlug,
+          op.entityId,
+          op.payload
+        )
+
+        await db.tasks.put({
+          id: serverTask.id,
+          workspaceSlug: op.workspaceSlug,
+          title: serverTask.title,
+          description: serverTask.description,
+          status: serverTask.status,
+          priority: serverTask.priority,
+          createdBy: "server",
+          assignedTo: serverTask.assignedTo ?? undefined,
+          createdAt: new Date(serverTask.createdAt).getTime(),
+          updatedAt: new Date(serverTask.updatedAt).getTime(),
+          synced: true
+        })
+
+        break
+      }
+
+      case "TASK_DELETE": {
+
+        await deleteTask(
+          op.workspaceSlug,
+          op.entityId
+        )
+
+        await db.tasks.delete(op.entityId)
+
+        break
+      }
     }
 
-    case "TASK_UPDATE": {
+  } catch (err: any) {
 
-      const serverTask = await retryWithBackoff(() =>
-        updateTask(op.workspaceSlug, op.entityId, op.payload)
-      )
-
-      await db.tasks.put({
-        id: serverTask.id,
-        workspaceSlug: op.workspaceSlug,
-        title: serverTask.title,
-        description: serverTask.description,
-        status: serverTask.status,
-        priority: serverTask.priority,
-        createdBy: "server",
-        assignedTo: serverTask.assignedTo ?? undefined,
-        createdAt: new Date(serverTask.createdAt).getTime(), // ✅ FIX
-        updatedAt: new Date(serverTask.updatedAt).getTime(), // ✅ FIX
-        synced: true
-      })
-
-      break
+    // 🔥 CRITICAL FIX: normalize network errors
+    if (!err || typeof err !== "object") {
+      throw { status: 0, message: "Unknown error" }
     }
 
-    case "TASK_DELETE": {
-
-      await retryWithBackoff(() =>
-        deleteTask(op.workspaceSlug, op.entityId)
-      )
-
-      await db.tasks.delete(op.entityId)
-
-      break
+    if (!("status" in err)) {
+      err.status = 0 // network / fetch error
     }
+
+    console.log("processOperation error:", err)
+
+    throw err
   }
 }
-
 /* =================================
    Mark operation synced
 ================================ */
@@ -163,9 +204,9 @@ async function markSynced(op: any) {
 /* =================================
    Process queue
 ================================ */
-
 async function processQueue() {
 
+  
   const operations = await getPendingOperations()
 
   if (!operations.length) return
@@ -173,28 +214,52 @@ async function processQueue() {
   for (const op of operations) {
 
     try {
+
       await processOperation(op)
+
       await markSynced(op)
 
-      break // process 1 per cycle
+      break // process one per cycle (good for stability)
 
     } catch (err: any) {
 
-      const status = err?.status ?? err?.response?.status
+  const status = 0
 
-      if (status === 404 && op.type === "TASK_DELETE") {
+  const isRetryable = !status || status >= 500
 
-        await db.tasks.delete(op.entityId)
+  // ❌ permanent failure
+  if (!isRetryable) {
 
-        await db.opLog.update(op.seq!, {
-          synced: true
-        })
+    await db.opLog.update(op.seq!, {
+      failed: true
+    })
 
-        continue
-      }
+    return
+  }
 
-      break
-    }
+  const retryCount = (op.retryCount ?? 0) + 1
+
+  if (retryCount > 5) {
+
+    await db.opLog.update(op.seq!, {
+      failed: true
+    })
+
+    return
+  }
+
+ await db.opLog.update(op.seq!, {
+  retryCount,
+  lastTriedAt: Date.now()
+})
+
+console.log("Retry:", op.opId, "count:", retryCount)
+
+// 🔥 ADD THIS LINE (EXACT PLACE)
+await new Promise(res => setTimeout(res, 1000))
+
+return
+}
   }
 }
 
@@ -266,10 +331,12 @@ export async function pullServerChanges(workspaceSlug: string) {
 export async function runSyncEngine(workspaceSlug: string) {
      if (!workspaceSlug) return 
   if (!isLeader) return
+  
   if (isRunning) return
   if (!isOnline()) return
 
   isRunning = true
+  console.log("SYNC ENGINE RUNNING")
   setSyncStatus("syncing")
 
   try {

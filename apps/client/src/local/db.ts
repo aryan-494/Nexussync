@@ -18,8 +18,8 @@ export interface LocalTask {
   createdBy: string
   assignedTo?: string
 
-  createdAt: number     // ✅ FIXED
-  updatedAt: number     // ✅ FIXED
+  createdAt: number
+  updatedAt: number
 
   synced: boolean
 }
@@ -48,10 +48,13 @@ export interface OperationLog {
 
   payload: unknown
 
-  createdAt: number     // ✅ FIXED
+  createdAt: number
 
   synced: boolean
-  failed?: boolean
+  failed: boolean
+
+  retryCount: number
+  lastTriedAt: number
 }
 
 /* ================================
@@ -75,7 +78,7 @@ class NexusSyncDB extends Dexie {
   constructor() {
     super("nexussync")
 
-    this.version(2).stores({   // ✅ version bumped
+    this.version(2).stores({
 
       tasks: `
         id,
@@ -91,7 +94,10 @@ class NexusSyncDB extends Dexie {
         type,
         entityId,
         workspaceSlug,
-        synced
+        synced,
+        failed,
+        retryCount,
+        lastTriedAt
       `,
 
       syncMeta: `
@@ -103,5 +109,5 @@ class NexusSyncDB extends Dexie {
 
 export const db = new NexusSyncDB()
 
-// 🔧 OPTIONAL (only for debugging in console)
+// 🔧 OPTIONAL (debug)
 ;(window as any).db = db

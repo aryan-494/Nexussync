@@ -12,7 +12,11 @@ export interface BaseOperation {
   payload: unknown
   createdAt: number
   synced: boolean
-  failed?: boolean
+  failed: boolean
+  
+
+  retryCount: number
+  lastTriedAt: number
 }
 
 export interface TaskCreatePayload {

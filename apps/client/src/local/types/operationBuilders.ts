@@ -13,7 +13,6 @@ import {
 /* =================================
    CREATE TASK OPERATION
 ================================= */
-
 export function createTaskOperation(
   workspaceSlug: string,
   payload: TaskCreatePayload
@@ -30,12 +29,15 @@ export function createTaskOperation(
 
     payload,
 
-    createdAt: Date.now(), // ✅ FIXED
+    createdAt: Date.now(),
 
+    // 🔥 REQUIRED DEFAULTS
     synced: false,
+    failed: false,
+    retryCount: 0,
+    lastTriedAt: 0,
   }
 }
-
 
 /* =================================
    UPDATE TASK OPERATION
@@ -58,13 +60,15 @@ export function updateTaskOperation(
 
     payload,
 
-    createdAt: Date.now(), // ✅ FIXED
+    createdAt: Date.now(),
 
+    // 🔥 REQUIRED DEFAULTS
     synced: false,
+    failed: false,
+    retryCount: 0,
+    lastTriedAt: 0,
   }
 }
-
-
 /* =================================
    DELETE TASK OPERATION
 ================================= */
@@ -89,8 +93,12 @@ export function deleteTaskOperation(
 
     payload,
 
-    createdAt: Date.now(), // ✅ FIXED (was wrong: new Date.now())
+    createdAt: Date.now(),
 
+    // 🔥 REQUIRED DEFAULTS
     synced: false,
+    failed: false,
+    retryCount: 0,
+    lastTriedAt: 0,
   }
 }
