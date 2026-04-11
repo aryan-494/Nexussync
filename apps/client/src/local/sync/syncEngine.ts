@@ -12,6 +12,25 @@ import { syncMetaRepo } from "./syncMetaRepo"
 const API_BASE = "http://localhost:3000/api/v1"
 
 
+
+
+
+let pullDebounceTimer: any = null
+
+export function triggerPullSync(workspaceSlug: string) {
+  if (!workspaceSlug) return
+
+  // prevent spam
+  if (pullDebounceTimer) return
+
+  pullDebounceTimer = setTimeout(() => {
+    console.log("🔁 Debounced sync trigger")
+
+    runSyncEngine(workspaceSlug)
+
+    pullDebounceTimer = null
+  }, 500)
+}
 /* =================================
    Retry with exponential backoff
 ================================ */

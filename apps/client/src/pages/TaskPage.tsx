@@ -8,18 +8,16 @@ import type { AppError } from "../api/http";
 import { hydrateWorkspace } from "../local/hydration/hydrateWorkspace";
 import { useSyncStatus } from "../local/sync/syncState";
 
-import { updateTaskLocal} from "../local/repositories/taskRepository"
+import { updateTaskLocal } from "../local/repositories/taskRepository";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { getSocket } from "../realtime/socket";
-import { useState } from "react";
+import { triggerPullSync } from "../local/sync/syncEngine";
 
 export function TaskPage() {
-
+ const { slug } = useParams<{ slug: string }>();
 
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
-
-  const { slug } = useParams();
 
   const {
     getWorkspaceBySlug,
@@ -37,44 +35,76 @@ export function TaskPage() {
     loadTasks,
     handleCreate,
     handleDelete,
-  } = useTasks(slug);
+  } = useTasks(slug!);
 
   const syncStatus = useSyncStatus();
+
+  /* =================================
+     HYDRATION + SOCKET SETUP
+  ================================= */
+
+  useEffect(() => {
+    if (!slug) return;
+
+    let isMounted = true;
+
+    async function init() {
+      try {
+        await hydrateWorkspace(slug!);
+      } catch (err) {
+        console.error("Hydration failed:", err);
+      }
+    }
+
+    init();
+
+    const socket = getSocket();
+
+    // ✅ JOIN on initial load (IMPORTANT)
+    socket.emit("JOIN_WORKSPACE", slug);
+    console.log("[socket] joined workspace:", slug);
+
+    // ✅ reconnect handler
+    const handleReconnect = () => {
+      console.log("[socket] reconnected");
+
+      socket.emit("JOIN_WORKSPACE", slug);
+
+      // 🔥 trigger sync after reconnect
+      triggerPullSync(slug);
+    };
+
+    socket.on("connect", handleReconnect);
+
+    // presence handler
+    const handlePresence = (data: any) => {
+      if (!isMounted) return;
+
+      if (data.workspaceSlug === slug) {
+        setOnlineUsers(data.users);
+      }
+    };
+
+    socket.on("PRESENCE_UPDATE", handlePresence);
+
+    return () => {
+      isMounted = false;
+
+      socket.off("PRESENCE_UPDATE", handlePresence);
+      socket.off("connect", handleReconnect); // ✅ FIX
+
+      socket.emit("LEAVE_WORKSPACE", slug);
+    };
+  }, [slug]);
+
+  /* =================================
+     GUARDS
+  ================================= */
 
   if (!slug) {
     return <Navigate to="/workspaces" replace />;
   }
 
-
-useEffect(() => {
-  if (!slug) return;
-
-  // hydrate local DB
-  hydrateWorkspace(slug);
-
-  const socket = getSocket();
-
-  // join workspace
-  socket.emit("JOIN_WORKSPACE", slug);
-  console.log("[socket] joined workspace:", slug);
-
-  // listen for presence updates
-  const handlePresence = (data: any) => {
-    console.log("[presence] update:", data);
-
-    if (data.workspaceSlug === slug) {
-      setOnlineUsers(data.users);
-    }
-  };
-
-  socket.on("PRESENCE_UPDATE", handlePresence);
-
-  // cleanup (VERY IMPORTANT)
-  return () => {
-    socket.off("PRESENCE_UPDATE", handlePresence);
-  };
-
-}, [slug]);
   if (workspaceLoading) {
     return <div>Loading workspace...</div>;
   }
@@ -85,49 +115,50 @@ useEffect(() => {
     return <Navigate to="/workspaces" replace />;
   }
 
+  /* =================================
+     DERIVED VALUES
+  ================================= */
+
   const totalPages = Math.ceil(total / limit);
 
+  const readableStatus =
+    syncStatus === "idle"
+      ? "Synced"
+      : syncStatus === "syncing"
+      ? "Syncing..."
+      : syncStatus === "offline"
+      ? "Offline"
+      : "Error";
 
+  /* =================================
+     HANDLERS
+  ================================= */
 
-  // Now removed api call and  UI will update automatically because of Dexie liveQuery.
+  async function handleStatusChange(id: string, status: string) {
+    if (!slug) return;
 
-  async function handleStatusChange(
-  id: string,
-  status: string
-) {
+    await updateTaskLocal(slug, id, { status });
+  }
 
-  if (!slug) return
-
-  await updateTaskLocal(slug, id, {
-    status
-  })
-
-}
+  /* =================================
+     UI
+  ================================= */
 
   return (
     <div>
+      <h2>Tasks for {workspace.name}</h2>
 
-      <h2>
-        Tasks for {workspace.name}
-      </h2>
-
-      <p>
-        Your role: {workspace.role}
-      </p>
+      <p>Your role: {workspace.role}</p>
 
       <p>
-        Sync status: {syncStatus}
+        Sync status: <strong>{readableStatus}</strong>
       </p>
 
       <p>Online users: {onlineUsers.length}</p>
 
       <TaskForm onCreate={handleCreate} />
 
-      {error && (
-        <p>
-          Error: {error.message}
-        </p>
-      )}
+      {error && <p>Error: {(error as AppError).message}</p>}
 
       {loading ? (
         <p>Loading tasks...</p>
@@ -141,7 +172,6 @@ useEffect(() => {
       )}
 
       <div>
-
         <button
           disabled={page === 1}
           onClick={() => {
@@ -167,9 +197,7 @@ useEffect(() => {
         >
           Next
         </button>
-
       </div>
-
     </div>
   );
 }
