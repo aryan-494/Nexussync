@@ -11,6 +11,7 @@ import * as taskRepository from "../repositories/taskRepository"
 import { syncMetaRepo } from "./syncMetaRepo"
 const API_BASE = "http://localhost:3000/api/v1"
 
+
 /* =================================
    Retry with exponential backoff
 ================================ */
@@ -54,6 +55,9 @@ async function retryWithBackoff<T>(
     }
   }
 }
+
+
+
 
 /* =================================
    Multi-tab sync protection
@@ -223,12 +227,22 @@ async function processQueue() {
 
     } catch (err: any) {
 
-  const status = 0
+  console.log("PROCESS QUEUE CATCH HIT", err)
 
-  const isRetryable = !status || status >= 500
+  const status = err?.status ?? 0
+  const code = err?.code ?? "UNKNOWN"
 
-  // ❌ permanent failure
+  // 🔥 classify error
+  const isNetworkError = status === 0
+  const isServerError = status >= 500
+  const isClientError = status >= 400 && status < 500
+
+  const isRetryable = isNetworkError || isServerError
+
+  // ❌ PERMANENT FAILURE
   if (!isRetryable) {
+
+    console.log("❌ PERMANENT FAILURE:", code)
 
     await db.opLog.update(op.seq!, {
       failed: true
@@ -237,10 +251,13 @@ async function processQueue() {
     return
   }
 
+  // 🔁 RETRY
   const retryCount = (op.retryCount ?? 0) + 1
 
   if (retryCount > 5) {
 
+    console.log("❌ MAX RETRIES REACHED")
+
     await db.opLog.update(op.seq!, {
       failed: true
     })
@@ -248,17 +265,20 @@ async function processQueue() {
     return
   }
 
- await db.opLog.update(op.seq!, {
-  retryCount,
-  lastTriedAt: Date.now()
-})
+  console.log("🔁 RETRY:", retryCount)
 
-console.log("Retry:", op.opId, "count:", retryCount)
+  await db.opLog.update(op.seq!, {
+    retryCount,
+    lastTriedAt: Date.now()
+  })
 
-// 🔥 ADD THIS LINE (EXACT PLACE)
-await new Promise(res => setTimeout(res, 1000))
+  // ⏱️ delay (basic backoff)
+  const delays = [1000, 2000, 5000, 10000, 30000]
+  const delay = delays[Math.min(retryCount - 1, delays.length - 1)]
 
-return
+  await new Promise(res => setTimeout(res, delay))
+
+  return
 }
   }
 }
@@ -329,30 +349,38 @@ export async function pullServerChanges(workspaceSlug: string) {
 ================================ */
 
 export async function runSyncEngine(workspaceSlug: string) {
-     if (!workspaceSlug) return 
+  if (!workspaceSlug) return
   if (!isLeader) return
-  
   if (isRunning) return
-  if (!isOnline()) return
 
   isRunning = true
   console.log("SYNC ENGINE RUNNING")
-  setSyncStatus("syncing")
 
   try {
 
-    await processQueue()
+    // 🔴 OFFLINE MODE
+    if (!navigator.onLine) {
+      setSyncStatus("offline")
 
-    await pullServerChanges(workspaceSlug) // ✅ FIX (VERY IMPORTANT)
+      // still process retry queue
+      await processQueue()
 
+      return
+    }
+
+    // 🟡 ONLINE MODE
+    setSyncStatus("syncing")
+
+    await processQueue()                 // push
+    await pullServerChanges(workspaceSlug) // pull
     await cleanupOperations()
 
-    setSyncStatus("idle")
+    setSyncStatus("idle")                // 🟢 done
 
-  }catch (err) {
+  } catch (err) {
 
     console.error("Sync engine crashed", err)
-    setSyncStatus("error")
+    setSyncStatus("error")               // ❌ failure
 
   } finally {
 

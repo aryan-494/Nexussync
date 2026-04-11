@@ -1,6 +1,10 @@
 import { useSyncExternalStore } from "react"
 
-type SyncStatus = "idle" | "syncing" | "error"
+export type SyncStatus =
+  | "idle"
+  | "syncing"
+  | "offline"
+  | "error"
 
 let status: SyncStatus = "idle"
 
@@ -11,7 +15,12 @@ function emit() {
 }
 
 export function setSyncStatus(next: SyncStatus) {
+  if (status === next) return // ✅ prevent unnecessary re-renders
+
   status = next
+
+  console.log("SYNC STATUS:", next) // 🔥 debug visibility
+
   emit()
 }
 
