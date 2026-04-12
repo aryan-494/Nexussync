@@ -1,5 +1,7 @@
 import { Server as HttpServer } from "http";
 import { Server as IOServer } from "socket.io";
+import { RateLimiterMemory } from "rate-limiter-flexible";
+
 import { socketAuthMiddleware } from "./socket.auth";
 import { initChangeStreams } from "./socket.events";
 
@@ -11,6 +13,15 @@ import {
 
 let io: IOServer | null = null;
 
+/* =================================
+   RATE LIMITER (SOCKET)
+================================= */
+
+const connectionLimiter = new RateLimiterMemory({
+  points: 20,     // max 20 connections
+  duration: 60,   // per 60 seconds
+});
+
 export function initSocketServer(server: HttpServer) {
   io = new IOServer(server, {
     cors: {
@@ -21,21 +32,50 @@ export function initSocketServer(server: HttpServer) {
 
   console.log("[socket] server initialized");
 
+  /* =================================
+     SOCKET RATE LIMITING (IMPORTANT)
+  ================================= */
+
+  io.use(async (socket, next) => {
+    try {
+      const ip = socket.handshake.address;
+
+      await connectionLimiter.consume(ip);
+
+      next();
+    } catch {
+      console.log("❌ Socket rate limit hit:", socket.handshake.address);
+      next(new Error("Too many connections"));
+    }
+  });
+
+  /* =================================
+     AUTH MIDDLEWARE
+  ================================= */
+
   io.use(socketAuthMiddleware);
 
-  // ✅ INIT change streams ONCE (not inside event)
+  /* =================================
+     CHANGE STREAMS INIT (ONCE)
+  ================================= */
+
   initChangeStreams();
+
+  /* =================================
+     CONNECTION HANDLER
+  ================================= */
 
   io.on("connection", (socket) => {
 
     console.log(`[socket] client connected: ${socket.id}`);
 
-    // 🔒 track workspaces per socket
+    // track workspaces per socket
     (socket as any).joinedWorkspaces = new Set<string>();
 
-    // ===============================
-    // JOIN WORKSPACE
-    // ===============================
+    /* ===============================
+       JOIN WORKSPACE
+    =============================== */
+
     socket.on("JOIN_WORKSPACE", async (workspaceSlug: string) => {
 
       const room = `workspace:${workspaceSlug}`;
@@ -45,27 +85,24 @@ export function initSocketServer(server: HttpServer) {
 
       console.log(`[socket] user ${userId} joined ${room}`);
 
-      // track for disconnect cleanup
       (socket as any).joinedWorkspaces.add(workspaceSlug);
 
-      // ✅ Redis: add user
       await addUserToWorkspace(workspaceSlug, userId);
 
-      // ✅ Redis: get users
       const users = await getUsersInWorkspace(workspaceSlug);
 
       console.log("[presence] users in", workspaceSlug, users);
 
-      // ✅ FIXED event name
       io?.to(room).emit("PRESENCE_UPDATE", {
         workspaceSlug,
         users,
       });
     });
 
-    // ===============================
-    // TEST EVENT (keep for debug)
-    // ===============================
+    /* ===============================
+       TEST EVENT (DEBUG)
+    =============================== */
+
     socket.on("TEST_EVENT", (workspaceSlug: string) => {
       const room = `workspace:${workspaceSlug}`;
 
@@ -77,9 +114,10 @@ export function initSocketServer(server: HttpServer) {
       });
     });
 
-    // ===============================
-    // DISCONNECT
-    // ===============================
+    /* ===============================
+       DISCONNECT
+    =============================== */
+
     socket.on("disconnect", async () => {
 
       const userId = (socket as any).user?.id;
@@ -87,10 +125,8 @@ export function initSocketServer(server: HttpServer) {
 
       for (const workspaceSlug of workspaces) {
 
-        // ✅ Redis: remove user
         await removeUserFromWorkspace(workspaceSlug, userId);
 
-        // ✅ Redis: get updated users
         const users = await getUsersInWorkspace(workspaceSlug);
 
         io?.to(`workspace:${workspaceSlug}`).emit("PRESENCE_UPDATE", {
