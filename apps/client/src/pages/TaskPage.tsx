@@ -57,10 +57,9 @@ export function TaskPage() {
     }
 
     init();
-
     const socket = getSocket();
 
-    // ✅ JOIN on initial load (IMPORTANT)
+    
     socket.emit("JOIN_WORKSPACE", slug);
     console.log("[socket] joined workspace:", slug);
 

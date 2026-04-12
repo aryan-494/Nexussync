@@ -4,30 +4,32 @@ import authRouter from "./auth";
 import protectedRouter from "./protected";
 import workspaceRouter from "./workspace.routes";
 import taskRoutes from "./tasks";
-import syncRoutes from "../../modules/sync/sync.routes"
+import syncRoutes from "../../modules/sync/sync.routes";
+import { apiRateLimiter, syncRateLimiter } from "../../middleware/rateLimiter";
 
 export function v1Router() {
   const router = Router();
 
+  // ✅ Apply global rate limiter FIRST
+  router.use(apiRateLimiter);
+
   // Health (public)
   router.get("/health", healthHandler);
 
-  // Auth routes (public)
+  // Auth routes
   router.use("/auth", authRouter);
 
-  // Protected (auth only, no workspace)
+  // Protected
   router.use("/protected", protectedRouter);
 
-  // Workspace-scoped routes (auth + workspace context inside)
+  // Workspace routes
   router.use("/workspaces", workspaceRouter);
 
+  // Tasks
+  router.use("/tasks", taskRoutes);
 
-
-router.use("/tasks", taskRoutes);
-
-// GET http://localhost:5000/api/v1/sync/pull?workspaceSlug=test&since=0&limit=50
-router.use("/sync", syncRoutes)
+  // ✅ Sync (stricter limiter)
+  router.use("/sync", syncRateLimiter, syncRoutes);
 
   return router;
 }
-
