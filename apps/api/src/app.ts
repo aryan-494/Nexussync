@@ -1,5 +1,5 @@
 import express from "express";
-import cors from "cors";
+import cors, { CorsOptions } from "cors";
 import cookieParser from "cookie-parser";
 
 import { contextMiddleware } from "./context";
@@ -14,14 +14,28 @@ export function createApp() {
   /* -----------------------------
      CORS (MUST BE FIRST)
   ------------------------------ */
-  app.use(
-    cors({
-      origin: "http://localhost:5173",
-      credentials: true,
-      methods: ["GET", "POST","PATCH", "PUT", "DELETE", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "Authorization"],
-    })
-  );
+app.use(
+  cors({
+     origin: (
+    origin: string | undefined,
+    callback: (err: Error | null, allow?: boolean) => void
+  )  => {
+      const allowed = [
+        process.env.FRONTEND_URL,
+      ];
+
+      // allow requests with no origin (mobile apps, curl)
+      if (!origin) return callback(null, true);
+
+      if (allowed.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  })
+);
 
   // Explicit preflight support
 app.options(/.*/, cors());

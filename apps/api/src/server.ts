@@ -9,7 +9,7 @@ let httpServer: Server | null = null;
 export function startServer(app: Express , config: AppConfig) {
 
   httpServer = app.listen(config.port, () => {
-    console.log(`[api] running on http://localhost:${config.port}`);
+    console.log(`[api] running on port ${config.port}`);;
   });
 
   // ✅ attach socket server AFTER app starts
