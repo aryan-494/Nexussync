@@ -10,10 +10,10 @@ let timeout: ReturnType<typeof setTimeout> | null = null;
 export function connectSocket() {
   if (socket) return socket;
 
-  socket = io("http://localhost:3000", {
-    withCredentials: true,
-  });
-
+  socket = io(import.meta.env.VITE_SOCKET_URL, {
+  withCredentials: true,
+  transports: ["websocket"],
+});
   socket.on("connect", () => {
     console.log("[socket] connected:", socket?.id);
   });
