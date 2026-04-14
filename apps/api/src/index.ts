@@ -1,9 +1,9 @@
 import "dotenv/config";
-import { createApp } from "./app";
-import { startServer, stopServer } from "./server";
-import { loadConfig } from "./config";
-import { connectMongo, disconnectMongo } from "./db/mongo";
-import { logger } from "./logger";
+import { createApp } from "./app.js";
+import { startServer, stopServer } from "./server.js";
+import { loadConfig } from "./config.js";
+import { connectMongo, disconnectMongo } from "./db/mongo.js";
+import { logger } from "./logger.js";
 
 async function bootstrap() {
   const config = loadConfig();

@@ -1,4 +1,4 @@
-import { IdempotencyModel } from "./idempotency.model";
+import { IdempotencyModel } from "./idempotency.model.js";
 
 class IdempotencyService {
 

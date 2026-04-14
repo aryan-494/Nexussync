@@ -1,6 +1,6 @@
 
-import { syncService } from "./sync.service"
-import { PullSyncQuery } from "./sync.types"
+import { syncService } from "./sync.service.js"
+import { PullSyncQuery } from "./sync.types.js"
 import { Request, Response, NextFunction } from "express";
 
 

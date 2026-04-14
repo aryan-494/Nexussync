@@ -1,4 +1,4 @@
-import "./env";
+import "./env.js";
 
 export type AppConfig = {
   env: string;

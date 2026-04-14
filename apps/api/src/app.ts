@@ -2,11 +2,11 @@ import express from "express";
 import cors, { CorsOptions } from "cors";
 import cookieParser from "cookie-parser";
 
-import { contextMiddleware } from "./context";
-import { requestLogger } from "./middleware/requestLogger";
-import { apiRouter } from "./routes";
-import { HttpError, NotFoundError } from "./errors";
-import { logger } from "./logger";
+import { contextMiddleware } from "./context.js";
+import { requestLogger } from "./middleware/requestLogger.js";
+import { apiRouter } from "../../api/src/routes/index.js";
+import { HttpError, NotFoundError } from "./errors.js";
+import { logger } from "./logger.js";
 
 export function createApp() {
   const app = express();

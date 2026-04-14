@@ -3,9 +3,9 @@
 // A controller is the translator and it is not alowed to decide rules or toich db 
 
 import type { Request, Response, NextFunction } from "express";
-import { signupUser } from "./user.service";
-import { SignupDTO } from "../auth/auth.dto";   
-import { validateDTO } from "../../utils/validate";
+import { signupUser } from "./user.service.js";
+import { SignupDTO } from "../auth/auth.dto.js";   
+import { validateDTO } from "../../utils/validate.js";
 
 export async function signupController(
   req: Request,

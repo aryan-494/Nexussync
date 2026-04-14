@@ -6,9 +6,9 @@
 
 import { Router } from "express";
 
-import { authMiddleware } from "../../middleware/auth.middleware";
-import { workspaceContextMiddleware } from "../../middleware/workspaceContext.middleware";
-import { requireWorkspaceRole } from "../../middleware/authorization.middleware";
+import { authMiddleware } from "../../middleware/auth.middleware.js";
+import { workspaceContextMiddleware } from "../../middleware/workspaceContext.middleware.js";
+import { requireWorkspaceRole } from "../../middleware/authorization.middleware.js";
 
 import {
   createTaskController,
@@ -16,7 +16,7 @@ import {
   getTaskController,
   updateTaskController,
   deleteTaskController,
-} from "../../modules/task/task.controller";
+} from "../../modules/task/task.controller.js";
 
 const router = Router();
 

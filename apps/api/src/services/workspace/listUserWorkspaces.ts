@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
-import { WorkspaceMemberModel } from "../../db/models/workspaceMember.model";
-import { WorkspaceModel } from "../../db/models/workspace.model";
+import { WorkspaceMemberModel } from "../../db/models/workspaceMember.model.js";
+import { WorkspaceModel } from "../../db/models/workspace.model.js";
 
 interface ListUserWorkspacesInput{
     userId:string;

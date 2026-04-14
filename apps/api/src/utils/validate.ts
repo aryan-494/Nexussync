@@ -1,5 +1,5 @@
 import { ZodSchema, ZodError } from "zod";
-import { HttpError } from "../errors";
+import { HttpError } from "../errors.js";
 
 export function validateDTO<T>(
   schema: ZodSchema<T>,

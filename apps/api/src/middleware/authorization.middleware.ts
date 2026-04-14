@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import { HttpError } from "../errors";
+import { HttpError } from "../errors.js";
 
 export type WorkspaceRole = "OWNER" | "MEMBER";
 

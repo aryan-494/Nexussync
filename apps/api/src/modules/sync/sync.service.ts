@@ -1,7 +1,7 @@
-import { PullSyncParams, PullTasksResponse } from "./sync.types"
-import { TaskModel } from "../../db/models/task.model"
-import { WorkspaceModel } from "../../db/models/workspace.model"
-import { WorkspaceMemberModel } from "../../db/models/workspaceMember.model"
+import { PullSyncParams, PullTasksResponse } from "./sync.types.js"
+import { TaskModel } from "../../db/models/task.model.js"
+import { WorkspaceModel } from "../../db/models/workspace.model.js"
+import { WorkspaceMemberModel } from "../../db/models/workspaceMember.model.js"
 import { HttpError } from "../../errors.js"
 
 class SyncService {

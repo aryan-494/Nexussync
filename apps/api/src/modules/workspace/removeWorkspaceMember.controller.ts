@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import { removeWorkspaceMember } from "../../services/workspace/removeWorkspaceMember";
-import { HttpError } from "../../errors";
+import { removeWorkspaceMember } from "../../services/workspace/removeWorkspaceMember.js";
+import { HttpError } from "../../errors.js";
 
 export async function removeWorkspaceMemberController(
   req: Request,

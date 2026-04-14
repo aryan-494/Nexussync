@@ -1,9 +1,9 @@
 
 import { Socket } from "socket.io";
 import jwt from "jsonwebtoken";
-import { loadConfig } from "../config";
+import { loadConfig } from "../config.js";
 import { ACCESS_TOKEN_COOKIE
- } from "../modules/auth/auth.types";
+ } from "../modules/auth/auth.types.js";
 
  type Next = (err?: any) => void;
 

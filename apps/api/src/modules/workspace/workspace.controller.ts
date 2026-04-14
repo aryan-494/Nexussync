@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import { createWorkspace } from "../../services/workspace/createWorkspace";
+import { createWorkspace } from "../../services/workspace/createWorkspace.js";
 
 export async function createWorkspaceController(
   req: Request,

@@ -33,7 +33,7 @@ export function getAllWorkspaces(){
 
 
 
-import { redis } from "./redis";
+import { redis } from "./redis.js";
 
 function getKey(workspaceSlug: string) {
   return `presence:workspace:${workspaceSlug}`;

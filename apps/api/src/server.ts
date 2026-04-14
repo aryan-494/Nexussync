@@ -1,7 +1,7 @@
 import type { Express } from "express";
-import type { AppConfig } from "./config";
+import type { AppConfig } from "./config.js";
 import type { Server } from "http";
-import { initSocketServer } from "./realtime/socket.server";
+import { initSocketServer } from "./realtime/socket.server.js";
 let httpServer: Server | null = null;
 
 

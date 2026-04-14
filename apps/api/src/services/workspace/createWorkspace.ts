@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
-import { WorkspaceModel } from "../../db/models/workspace.model";
-import { WorkspaceMemberModel } from "../../db/models/workspaceMember.model";
-import { HttpError } from "../../errors";
+import { WorkspaceModel } from "../../db/models/workspace.model.js";
+import { WorkspaceMemberModel } from "../../db/models/workspaceMember.model.js";
+import { HttpError } from "../../errors.js";
 
 function generateSlug(name: string): string {
   return name

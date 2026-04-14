@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
-import { WorkspaceMemberModel } from "../../db/models/workspaceMember.model";
-import { HttpError } from "../../errors";
+import { WorkspaceMemberModel } from "../../db/models/workspaceMember.model.js";
+import { HttpError } from "../../errors.js";
 
 interface RemoveWorkspaceMemberInput {
   workspaceId: string;

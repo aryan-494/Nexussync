@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
-import { TaskModel, TaskStatus, TaskPriority } from "../../db/models/task.model";
-import { HttpError } from "../../errors";
-import { WorkspaceMemberModel } from "../../db/models/workspaceMember.model";
+import { TaskModel, TaskStatus, TaskPriority } from "../../db/models/task.model.js";
+import { HttpError } from "../../errors.js";
+import { WorkspaceMemberModel } from "../../db/models/workspaceMember.model.js";
 
 /**
  * Map Mongo document -> API response

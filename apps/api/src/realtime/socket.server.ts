@@ -2,14 +2,14 @@ import { Server as HttpServer } from "http";
 import { Server as IOServer } from "socket.io";
 import { RateLimiterMemory } from "rate-limiter-flexible";
 
-import { socketAuthMiddleware } from "./socket.auth";
-import { initChangeStreams } from "./socket.events";
+import { socketAuthMiddleware } from "./socket.auth.js";
+import { initChangeStreams } from "./socket.events.js";
 
 import {
   addUserToWorkspace,
   removeUserFromWorkspace,
   getUsersInWorkspace,
-} from "./presence";
+} from "./presence.js";
 
 let io: IOServer | null = null;
 

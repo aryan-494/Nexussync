@@ -1,11 +1,11 @@
 import { Router } from "express";
-import { healthHandler } from "./health";
-import authRouter from "./auth";
-import protectedRouter from "./protected";
-import workspaceRouter from "./workspace.routes";
-import taskRoutes from "./tasks";
-import syncRoutes from "../../modules/sync/sync.routes";
-import { apiRateLimiter, syncRateLimiter } from "../../middleware/rateLimiter";
+import { healthHandler } from "./health.js";
+import authRouter from "./auth.js";
+import protectedRouter from "./protected.js";
+import workspaceRouter from "./workspace.routes.js";
+import taskRoutes from "./tasks.js";
+import syncRoutes from "../../modules/sync/sync.routes.js";
+import { apiRateLimiter, syncRateLimiter } from "../../middleware/rateLimiter.js";
 
 export function v1Router() {
   const router = Router();

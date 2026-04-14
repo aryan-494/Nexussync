@@ -2,7 +2,7 @@ import type { Response } from "express";
 import {
   ACCESS_TOKEN_COOKIE,
   REFRESH_TOKEN_COOKIE,
-} from "./auth.types";
+} from "./auth.types.js";
 
 // Options used when setting cookies
 type CookieOptions = {

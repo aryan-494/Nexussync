@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
-import { loadConfig } from "../config";
-import { logger } from "../logger";
+import { loadConfig } from "../config.js";
+import { logger } from "../logger.js";
 
 // 🚨 Fail fast if Mongo is not connected
 mongoose.set("bufferCommands", false);

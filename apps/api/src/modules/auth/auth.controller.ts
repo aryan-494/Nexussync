@@ -1,13 +1,13 @@
 import type { Request, Response, NextFunction } from "express";
-import { loginUser, refreshAccessToken } from "./auth.service";
-import { setAuthCookies, clearAuthCookies } from "./auth.cookies";
+import { loginUser, refreshAccessToken } from "./auth.service.js";
+import { setAuthCookies, clearAuthCookies } from "./auth.cookies.js";
 import {
   ACCESS_TOKEN_COOKIE,
   REFRESH_TOKEN_COOKIE,
-} from "./auth.types";
-import { validateDTO } from "../../utils/validate";
-import { LoginDTO } from "./auth.dto";
-import { HttpError } from "../../errors";
+} from "./auth.types.js";
+import { validateDTO } from "../../utils/validate.js";
+import { LoginDTO } from "./auth.dto.js";
+import { HttpError } from "../../errors.js";
 
 /**
  * POST /api/v1/auth/login

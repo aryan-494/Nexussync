@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import type { Request, Response, NextFunction } from "express";
-import { addWorkspaceMember } from "../../services/workspace/addWorkspaceMember";
-import { HttpError } from "../../errors";
+import { addWorkspaceMember } from "../../services/workspace/addWorkspaceMember.js";
+import { HttpError } from "../../errors.js";
 
 export async function addWorkspaceMemberController(
   req: Request,

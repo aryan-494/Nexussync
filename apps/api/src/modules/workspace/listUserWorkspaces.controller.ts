@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
-import { listUserWorkspaces } from "../../services/workspace/listUserWorkspaces";
-import { HttpError } from "../../errors";
+import { listUserWorkspaces } from "../../services/workspace/listUserWorkspaces.js";
+import { HttpError } from "../../errors.js";
 
 export async function listUserWorkspacesController(
   req: Request,

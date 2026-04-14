@@ -9,9 +9,9 @@
 // -> return safe user data 
 
  import bcrypt from "bcrypt";
-import { UserModel} from "../../db/models/user.model";
-import { HttpError } from "../../errors";
-import type { PublicUser } from "./user.types";
+import { UserModel} from "../../db/models/user.model.js";
+import { HttpError } from "../../errors.js";
+import type { PublicUser } from "./user.types.js";
 
 const SALT_ROUNDS = 10;
 

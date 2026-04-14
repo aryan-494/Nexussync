@@ -1,13 +1,13 @@
 import { Router } from "express";
 
-import { authMiddleware } from "../../middleware/auth.middleware";
-import { workspaceContextMiddleware } from "../../middleware/workspaceContext.middleware";
-import { requireWorkspaceRole } from "../../middleware/authorization.middleware";
+import { authMiddleware } from "../../middleware/auth.middleware.js";
+import { workspaceContextMiddleware } from "../../middleware/workspaceContext.middleware.js";
+import { requireWorkspaceRole } from "../../middleware/authorization.middleware.js";
 
-import { createWorkspaceController } from "../../modules/workspace/workspace.controller";
-import { listUserWorkspacesController } from "../../modules/workspace/listUserWorkspaces.controller";
-import { addWorkspaceMemberController } from "../../modules/workspace/addWorkspaceMember.controller";
-import { removeWorkspaceMemberController } from "../../modules/workspace/removeWorkspaceMember.controller";
+import { createWorkspaceController } from "../../modules/workspace/workspace.controller.js";
+import { listUserWorkspacesController } from "../../modules/workspace/listUserWorkspaces.controller.js";
+import { addWorkspaceMemberController } from "../../modules/workspace/addWorkspaceMember.controller.js";
+import { removeWorkspaceMemberController } from "../../modules/workspace/removeWorkspaceMember.controller.js";
 
 const router = Router();
 

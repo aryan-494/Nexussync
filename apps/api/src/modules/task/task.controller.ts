@@ -5,12 +5,12 @@
 // → service (enforce business rules)
 
 import { Request, Response, NextFunction } from "express";
-import * as taskService from "../../services/task/task.service";
-import { HttpError } from "../../errors";
-import { CreateTaskDTO, UpdateTaskDTO } from "./task.dto";
-import { validateDTO } from "../../utils/validate";
-import { PaginationDTO } from "../../utils/pagination.dto";
-import { idempotencyService } from "../../modules/idempotency/idempotency.service";
+import * as taskService from "../../services/task/task.service.js";
+import { HttpError } from "../../errors.js";
+import { CreateTaskDTO, UpdateTaskDTO } from "./task.dto.js";
+import { validateDTO } from "../../utils/validate.js";
+import { PaginationDTO } from "../../utils/pagination.dto.js";
+import { idempotencyService } from "../../modules/idempotency/idempotency.service.js";
 
 /**
  * Utility to safely extract fully-built context

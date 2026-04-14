@@ -1,6 +1,6 @@
-import { getIO } from "./socket.server";
-import { TaskModel } from "../db/models/task.model";
-import { WorkspaceModel } from "../db/models/workspace.model";
+import { getIO } from "./socket.server.js";
+import { TaskModel } from "../db/models/task.model.js";
+import { WorkspaceModel } from "../db/models/workspace.model.js";
 
 export function initChangeStreams() {
   console.log("[socket] initializing change streams...");

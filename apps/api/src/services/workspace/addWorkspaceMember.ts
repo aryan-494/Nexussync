@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
-import { WorkspaceMemberModel } from "../../db/models/workspaceMember.model";
-import { UserModel } from "../../db/models/user.model";
-import { HttpError } from "../../errors";
+import { WorkspaceMemberModel } from "../../db/models/workspaceMember.model.js";
+import { UserModel } from "../../db/models/user.model.js";
+import { HttpError } from "../../errors.js";
 
 interface AddWorkspaceMemberInput {
   workspaceId: mongoose.Types.ObjectId;

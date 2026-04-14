@@ -1,9 +1,9 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
-import { loadConfig } from "../../config";
-import { findUserByEmail } from "../users/user.repository";
-import { HttpError } from "../../errors";
+import { loadConfig } from "../../config.js";
+import { findUserByEmail } from "../users/user.repository.js";
+import { HttpError } from "../../errors.js";
 
 export interface LoginResult {
   accessToken: string;

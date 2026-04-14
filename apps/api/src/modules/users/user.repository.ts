@@ -1,4 +1,4 @@
-import { UserModel } from "../../db/models/user.model";
+import { UserModel } from "../../db/models/user.model.js";
 
 /**
  * Find active user by email

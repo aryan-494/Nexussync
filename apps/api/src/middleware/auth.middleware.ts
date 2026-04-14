@@ -1,8 +1,8 @@
 import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { loadConfig } from "../config";
-import { HttpError } from "../errors";
-import { ACCESS_TOKEN_COOKIE } from "../modules/auth/auth.types";
+import { loadConfig } from "../config.js";
+import { HttpError } from "../errors.js";
+import { ACCESS_TOKEN_COOKIE } from "../modules/auth/auth.types.js";
 
 export function authMiddleware(
   req: Request,

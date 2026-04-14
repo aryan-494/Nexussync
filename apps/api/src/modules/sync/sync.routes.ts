@@ -1,6 +1,6 @@
 import { Router } from "express"
-import { pullSyncController } from "./sync.controller"
-import { authMiddleware } from "../../middleware/auth.middleware" // ✅ import
+import { pullSyncController } from "./sync.controller.js"
+import { authMiddleware } from "../../middleware/auth.middleware.js" // ✅ import
 
 const router = Router();
 
