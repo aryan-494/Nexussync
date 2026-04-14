@@ -9,22 +9,23 @@ import { HttpError, NotFoundError } from "./errors";
 
 export function createApp() {
   const app = express();
-   app.use(express.json());
+
+  app.use(express.json());
 
   /* -----------------------------
      CORS (MUST BE FIRST)
   ------------------------------ */
-app.use(
-  cors({
-     origin: (
-    origin: string | undefined,
-    callback: (err: Error | null, allow?: boolean) => void
-  )  => {
+
+  const corsOptions: CorsOptions = {
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void
+    ) => {
       const allowed = [
         process.env.FRONTEND_URL,
-      ];
+      ].filter(Boolean) as string[];
 
-      // allow requests with no origin (mobile apps, curl)
+      // allow requests with no origin (Postman, curl)
       if (!origin) return callback(null, true);
 
       if (allowed.includes(origin)) {
@@ -34,17 +35,18 @@ app.use(
       return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
-  })
-);
+  };
 
-  // Explicit preflight support
-app.options(/.*/, cors());
+  // ✅ APPLY CORS (IMPORTANT)
+  app.use(cors(corsOptions));
 
+  // ✅ Preflight support (use same config)
+  app.options(/.*/, cors(corsOptions));
 
   /* -----------------------------
      Core middleware
   ------------------------------ */
- // app.use(express.json());
+
   app.use(cookieParser());
 
   app.use(contextMiddleware);
@@ -53,11 +55,13 @@ app.options(/.*/, cors());
   /* -----------------------------
      Routes
   ------------------------------ */
+
   app.use("/api", apiRouter());
 
   /* -----------------------------
      404 handler
   ------------------------------ */
+
   app.use((req, _res, next) => {
     next(new NotFoundError(`Cannot ${req.method} ${req.path}`));
   });
@@ -65,39 +69,39 @@ app.options(/.*/, cors());
   /* -----------------------------
      Global error handler
   ------------------------------ */
+
   app.use(
-  (
-    err: unknown,
-    req: express.Request,
-    res: express.Response,
-    _next: express.NextFunction
-  ) => {
+    (
+      err: unknown,
+      req: express.Request,
+      res: express.Response,
+      _next: express.NextFunction
+    ) => {
+      const requestId = req.context?.requestId;
 
-    const requestId = req.context?.requestId;
+      // Known HttpError
+      if (err instanceof HttpError) {
+        return res.status(err.statusCode).json({
+          error: {
+            message: err.message,
+            code: err.code,
+          },
+          requestId,
+        });
+      }
 
-    // Known HttpError
-    if (err instanceof HttpError) {
-      return res.status(err.statusCode).json({
+      // Unknown errors
+      console.error(err);
+
+      return res.status(500).json({
         error: {
-          message: err.message,
-          code: err.code,
+          message: "Internal Server Error",
+          code: "INTERNAL_ERROR",
         },
         requestId,
       });
     }
-
-    // Unknown errors
-    console.error(err);
-
-    return res.status(500).json({
-      error: {
-        message: "Internal Server Error",
-        code: "INTERNAL_ERROR",
-      },
-      requestId,
-    });
-  }
-);
+  );
 
   return app;
 }
