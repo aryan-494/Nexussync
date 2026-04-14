@@ -9,6 +9,7 @@ import { HttpError, NotFoundError } from "./errors";
 
 export function createApp() {
   const app = express();
+  app.set("trust proxy", 1);
 
   app.use(express.json());
 

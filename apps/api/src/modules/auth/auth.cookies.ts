@@ -53,12 +53,12 @@ export function setAuthCookies(
 export function clearAuthCookies(res: Response) {
   const isProd = process.env.NODE_ENV === "production";
 
-  const baseOptions = {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: "lax" as const,
-    path: "/",
-  };
+ const baseOptions: Omit<CookieOptions, "maxAge"> = {
+  httpOnly: true,
+  secure: isProd, // must be true in production
+  sameSite: isProd ? "none" : "lax", // 🔥 critical fix
+  path: "/",
+};
 
   // Remove access token cookie
   res.clearCookie(ACCESS_TOKEN_COOKIE, baseOptions);
