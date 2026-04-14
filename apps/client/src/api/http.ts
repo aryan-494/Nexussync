@@ -37,7 +37,7 @@ async function request<T>(
     throw {
       code: data?.error?.code ?? "UNKNOWN_ERROR",
       message: data?.error?.message ?? "Request failed",
-      status: res.status
+      status: data?.error?.status ?? res.status
     } satisfies AppError
   }
 

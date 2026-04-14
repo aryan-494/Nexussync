@@ -6,6 +6,7 @@ import { contextMiddleware } from "./context";
 import { requestLogger } from "./middleware/requestLogger";
 import { apiRouter } from "./routes";
 import { HttpError, NotFoundError } from "./errors";
+import { logger } from "./logger";
 
 export function createApp() {
   const app = express();
@@ -23,8 +24,12 @@ export function createApp() {
       callback: (err: Error | null, allow?: boolean) => void
     ) => {
       const allowed = [
-        process.env.FRONTEND_URL,
-      ].filter(Boolean) as string[];
+  process.env.FRONTEND_URL,
+].filter(Boolean) as string[];
+
+if (allowed.length === 0) {
+  return callback(null, true); // fallback safety
+}
 
       // allow requests with no origin (Postman, curl)
       if (!origin) return callback(null, true);
@@ -80,27 +85,34 @@ export function createApp() {
     ) => {
       const requestId = req.context?.requestId;
 
-      // Known HttpError
       if (err instanceof HttpError) {
-        return res.status(err.statusCode).json({
-          error: {
-            message: err.message,
-            code: err.code,
-          },
-          requestId,
-        });
-      }
-
+  return res.status(err.statusCode).json({
+    error: {
+      message: err.message,
+      code: err.code,
+      status: err.statusCode, // 🔥 ADD THIS
+    },
+    requestId,
+  });
+}
       // Unknown errors
       console.error(err);
 
-      return res.status(500).json({
-        error: {
-          message: "Internal Server Error",
-          code: "INTERNAL_ERROR",
-        },
-        requestId,
-      });
+logger.error("Unhandled error", err);
+
+return res.status(500).json({
+  error: {
+    message:
+      process.env.NODE_ENV === "production"
+        ? "Internal Server Error"
+        : err instanceof Error
+        ? err.message
+        : "Unknown error",
+    code: "INTERNAL_ERROR",
+    status: 500, // 🔥 ADD THIS
+  },
+  requestId,
+});
     }
   );
 
