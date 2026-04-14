@@ -21,7 +21,10 @@ export function loadConfig(): AppConfig {
   }
 
   const mongoUri =
-    process.env.MONGO_URI ?? "mongodb://localhost:27017/nexussync";
+    process.env.MONGO_URI ;
+    if (!mongoUri) {
+  throw new Error("MONGO_URI is not set");
+}
 
   const jwtSecret = process.env.JWT_SECRET;
   if (!jwtSecret) {

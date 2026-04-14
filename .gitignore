@@ -1,3 +1,10 @@
+# dependencies
 node_modules
+
+# build
 dist
-.env
+
+
+# env files (ignore all)
+**/.env
+**/.env.*
