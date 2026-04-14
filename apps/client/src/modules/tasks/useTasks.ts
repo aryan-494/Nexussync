@@ -65,11 +65,22 @@ export function useTasks(slug: string) {
 
     try {
 
-      await createTaskLocal(slug, {
-        title,
-        description,
-        priority
-      });
+      const cleanTitle = title?.trim();
+
+if (!cleanTitle) {
+  setError({
+    code: "VALIDATION_ERROR",
+    message: "Title is required",
+    status: 400
+  });
+  return;
+}
+
+await createTaskLocal(slug, {
+  title: cleanTitle,
+  description: description?.trim() || "",
+  priority: priority ?? "MEDIUM"
+});
 
       // ❗ No loadTasks here
       // UI updates automatically via IndexedDB + liveQuery
