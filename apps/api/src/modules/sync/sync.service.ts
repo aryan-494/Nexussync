@@ -3,15 +3,17 @@ import { TaskModel } from "../../db/models/task.model.js"
 import { WorkspaceModel } from "../../db/models/workspace.model.js"
 import { WorkspaceMemberModel } from "../../db/models/workspaceMember.model.js"
 import { HttpError } from "../../errors.js"
+import mongoose from "mongoose"
 
 class SyncService {
-
-  async pullChanges(params: PullSyncParams): Promise<PullTasksResponse<any>> {
+  async pullChanges(
+    params: PullSyncParams
+  ): Promise<PullTasksResponse<any>> {
     try {
       const { workspaceSlug, since, limit, userId } = params
 
       const workspace = await WorkspaceModel.findOne({
-        slug: workspaceSlug
+        slug: workspaceSlug,
       })
 
       if (!workspace) {
@@ -22,13 +24,16 @@ class SyncService {
         )
       }
 
-      // ✅ correct (no conversion needed)
-      const workspaceId = workspace._id
+      // 🔥 FORCE CLEAN OBJECTID (no inference issues)
+      const workspaceId = new mongoose.Types.ObjectId(
+        workspace._id.toString()
+      )
 
+      // 🔥 FORCE SIMPLE QUERY (NO TYPE GENERICS)
       const membership = await WorkspaceMemberModel.findOne({
         workspaceId: workspaceId,
-        userId: String(userId)
-      })
+        userId: userId,
+      } as Record<string, unknown>)
 
       if (!membership) {
         throw new HttpError(
@@ -38,19 +43,19 @@ class SyncService {
         )
       }
 
+      // 🔥 SAME FIX HERE
       const tasks = await TaskModel.find({
-        workspaceId: workspaceId, // ✅ now perfectly typed
-        updatedAt: { $gte: new Date(since) }
-      })
+        workspaceId: workspaceId,
+        updatedAt: { $gte: new Date(since) },
+      } as Record<string, unknown>)
         .sort({ updatedAt: 1 })
         .limit(limit)
         .lean()
 
       return {
         tasks,
-        serverTime: Date.now()
+        serverTime: Date.now(),
       }
-
     } catch (err) {
       throw err
     }
