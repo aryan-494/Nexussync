@@ -27,7 +27,7 @@ export async function addWorkspaceMember(
 
     const membership = await WorkspaceMemberModel.create({
       workspaceId: input.workspaceId,
-      userId: user._id,
+      userId: user._id.toString(),
       role: "MEMBER",
     });
 
