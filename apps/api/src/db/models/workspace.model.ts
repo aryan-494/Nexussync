@@ -1,55 +1,55 @@
-import { Schema , model , Types } from "mongoose" ;
+import { Schema, model, Types } from "mongoose";
+
 export type WorkspaceStatus = "ACTIVE" | "ARCHIVED";
 
-export interface Workspace  {
-    _id: Types.ObjectId,
-    name: string,
-    slug:string,
-    status:WorkspaceStatus,
-    createdBy: Types.ObjectId,
-    createdAt:Date,
-    updatedAt:Date,
-
+export interface Workspace {
+  _id: Types.ObjectId;
+  name: string;
+  slug: string;
+  status: WorkspaceStatus;
+  createdBy: Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const workspaceSchema = new Schema<Workspace>(
-
-   {
-    name:{
-        type:String,
-        required:true,
-        trim:true,
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true,
     },
-    slug:{
+
+    slug: {
       type: String,
       required: true,
       unique: true,
       lowercase: true,
       trim: true,
     },
-     status: {
+
+    status: {
       type: String,
       enum: ["ACTIVE", "ARCHIVED"],
       default: "ACTIVE",
       required: true,
     },
 
-   createdBy: {
-  type: Types.ObjectId,
-  required: true,
-  ref: "User",
-}
-   },
-     {
+    // ✅ FIXED (important)
+    createdBy: {
+      type: Schema.Types.ObjectId, // ← was wrong before
+      required: true,
+      ref: "User",
+    },
+  },
+  {
     timestamps: true,
     versionKey: false,
   }
 );
 
-
-// 🔒 Explicit unique index (do NOT rely on implicit)
+// 🔒 Explicit unique index
 workspaceSchema.index({ slug: 1 }, { unique: true });
-
 
 export const WorkspaceModel = model<Workspace>(
   "Workspace",

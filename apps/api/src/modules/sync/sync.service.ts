@@ -6,58 +6,55 @@ import { HttpError } from "../../errors.js"
 
 class SyncService {
 
-  async pullChanges(params: PullSyncParams) {
-  try {
-    const { workspaceSlug, since, limit, userId } = params
+  async pullChanges(params: PullSyncParams): Promise<PullTasksResponse<any>> {
+    try {
+      const { workspaceSlug, since, limit, userId } = params
 
-    console.log("SYNC INPUT:", { workspaceSlug, since, limit, userId })
+      const workspace = await WorkspaceModel.findOne({
+        slug: workspaceSlug
+      })
 
-    const workspace = await WorkspaceModel.findOne({
-      slug: workspaceSlug
-    })
+      if (!workspace) {
+        throw new HttpError(
+          "Workspace not found",
+          404,
+          "WORKSPACE_NOT_FOUND"
+        )
+      }
 
-    console.log("WORKSPACE:", workspace)
+      // ✅ correct (no conversion needed)
+      const workspaceId = workspace._id
 
-    if (!workspace) {
-      throw new HttpError(
-        "Workspace not found",
-        404,
-        "WORKSPACE_NOT_FOUND"
-      )
+      const membership = await WorkspaceMemberModel.findOne({
+        workspaceId: workspaceId,
+        userId: String(userId)
+      })
+
+      if (!membership) {
+        throw new HttpError(
+          "Access denied to workspace",
+          403,
+          "WORKSPACE_ACCESS_DENIED"
+        )
+      }
+
+      const tasks = await TaskModel.find({
+        workspaceId: workspaceId, // ✅ now perfectly typed
+        updatedAt: { $gte: new Date(since) }
+      })
+        .sort({ updatedAt: 1 })
+        .limit(limit)
+        .lean()
+
+      return {
+        tasks,
+        serverTime: Date.now()
+      }
+
+    } catch (err) {
+      throw err
     }
-
-    const membership = await WorkspaceMemberModel.findOne({
-      workspaceId: workspace._id,
-      userId: userId
-    })
-
-    if (!membership) {
-      throw new HttpError(
-        "Access denied to workspace",
-        403,
-        "WORKSPACE_ACCESS_DENIED"
-      )
-    }
-
-    const tasks = await TaskModel.find({
-      workspaceId: workspace._id,
-      updatedAt: { $gte: new Date(since) }
-    })
-      .sort({ updatedAt: 1 })
-      .limit(limit)
-      .lean()
-
-    console.log("TASKS:", tasks)
-
-    return {
-      tasks,
-      serverTime: Date.now()
-    }
-
-  } catch (err) {
-    console.error("SYNC SERVICE ERROR:", err)
-    throw err
   }
 }
-}
+
 export const syncService = new SyncService()

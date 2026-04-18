@@ -5,7 +5,11 @@ export interface User {
   email: string;
   passwordHash: string;
   status: "ACTIVE" | "DISABLED";
+
+   createdAt: Date;
+  updatedAt: Date;
 }
+
 
 const userSchema = new Schema(
   {

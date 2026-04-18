@@ -64,7 +64,7 @@ export async function workspaceContextMiddleware(
 
     // 5️⃣ Resolve membership
     const membership = await WorkspaceMemberModel.findOne({
-      workspaceId: workspace._id,
+      workspaceId: workspace._id.toString(),
       userId: req.auth.userId,
     }).lean();
 

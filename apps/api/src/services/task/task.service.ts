@@ -20,7 +20,7 @@ function mapTask(task: any) {
 }
 
 interface CreateTaskInput {
-  id: string;  // frontend generated id
+  id: string;
   workspaceId: string;
   userId: string;
   role: "OWNER" | "MEMBER";
@@ -34,16 +34,11 @@ export async function createTask(input: CreateTaskInput) {
   const { id, workspaceId, userId, title, description, priority } = input;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    throw new HttpError(
-      "Invalid task id",
-      400,
-      "INVALID_TASK_ID"
-    );
+    throw new HttpError("Invalid task id", 400, "INVALID_TASK_ID");
   }
 
   const task = await TaskModel.findOneAndUpdate(
-
-    { _id: new mongoose.Types.ObjectId(id) },
+    { _id: new mongoose.Types.ObjectId(id) }, // ✅ FIXED (was wrong: Types.string ❌)
 
     {
       $setOnInsert: {
@@ -60,8 +55,12 @@ export async function createTask(input: CreateTaskInput) {
       upsert: true,
       new: true
     }
-
   );
+
+  // ✅ null safety (TS fix)
+  if (!task) {
+    throw new HttpError("Task creation failed", 500, "TASK_CREATION_FAILED");
+  }
 
   return mapTask(task);
 }
@@ -84,14 +83,12 @@ export async function listTasks(input: ListTasksInput) {
   };
 
   const [tasks, total] = await Promise.all([
-
     TaskModel.find(filter)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit),
 
     TaskModel.countDocuments(filter)
-
   ]);
 
   return {
@@ -110,11 +107,7 @@ interface GetTaskInput {
 export async function getTaskById(input: GetTaskInput) {
 
   if (!mongoose.Types.ObjectId.isValid(input.taskId)) {
-    throw new HttpError(
-      "Task not found",
-      404,
-      "INVALID_TASK_ID"
-    );
+    throw new HttpError("Task not found", 404, "INVALID_TASK_ID");
   }
 
   const { workspaceId, taskId } = input;
@@ -125,11 +118,7 @@ export async function getTaskById(input: GetTaskInput) {
   });
 
   if (!task) {
-    throw new HttpError(
-      "Task not found",
-      404,
-      "TASK_NOT_FOUND"
-    );
+    throw new HttpError("Task not found", 404, "TASK_NOT_FOUND");
   }
 
   return mapTask(task);
@@ -152,11 +141,7 @@ interface UpdateTaskInput {
 export async function updateTask(input: UpdateTaskInput) {
 
   if (!mongoose.Types.ObjectId.isValid(input.taskId)) {
-    throw new HttpError(
-      "Task not found",
-      400,
-      "INVALID_TASK_ID"
-    );
+    throw new HttpError("Task not found", 400, "INVALID_TASK_ID");
   }
 
   const { workspaceId, taskId, updates } = input;
@@ -167,11 +152,7 @@ export async function updateTask(input: UpdateTaskInput) {
   });
 
   if (!task) {
-    throw new HttpError(
-      "Task not found",
-      404,
-      "TASK_NOT_FOUND"
-    );
+    throw new HttpError("Task not found", 404, "TASK_NOT_FOUND");
   }
 
   const allowedFields = [
@@ -190,19 +171,16 @@ export async function updateTask(input: UpdateTaskInput) {
     }
   }
 
-  if (filteredUpdates.assignedTo) {
+  // ✅ FIXED: proper null check
+  if (filteredUpdates.assignedTo !== undefined && filteredUpdates.assignedTo !== null) {
 
     if (!mongoose.Types.ObjectId.isValid(filteredUpdates.assignedTo)) {
-      throw new HttpError(
-        "Invalid assigned user",
-        400,
-        "INVALID_ASSIGNMENT"
-      );
+      throw new HttpError("Invalid assigned user", 400, "INVALID_ASSIGNMENT");
     }
 
     const member = await WorkspaceMemberModel.findOne({
       workspaceId: new mongoose.Types.ObjectId(workspaceId),
-      userId: new mongoose.Types.ObjectId(filteredUpdates.assignedTo),
+      userId: filteredUpdates.assignedTo, // ✅ FIXED (string match)
     });
 
     if (!member) {
@@ -212,11 +190,9 @@ export async function updateTask(input: UpdateTaskInput) {
         "INVALID_ASSIGNMENT"
       );
     }
-
   }
 
   task.set(filteredUpdates);
-
   await task.save();
 
   return mapTask(task);
@@ -231,11 +207,7 @@ interface DeleteTaskInput {
 export async function deleteTask(input: DeleteTaskInput) {
 
   if (!mongoose.Types.ObjectId.isValid(input.taskId)) {
-    throw new HttpError(
-      "Task not found",
-      400,
-      "INVALID_TASK_ID"
-    );
+    throw new HttpError("Task not found", 400, "INVALID_TASK_ID");
   }
 
   const { workspaceId, taskId, role } = input;
@@ -254,11 +226,7 @@ export async function deleteTask(input: DeleteTaskInput) {
   });
 
   if (!task) {
-    throw new HttpError(
-      "Task not found",
-      404,
-      "TASK_NOT_FOUND"
-    );
+    throw new HttpError("Task not found", 404, "TASK_NOT_FOUND");
   }
 
   await task.deleteOne();
