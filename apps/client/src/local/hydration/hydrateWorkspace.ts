@@ -32,10 +32,10 @@ export async function hydrateWorkspace(
           priority: task.priority,
           createdBy: "server",
           assignedTo: task.assignedTo ?? undefined,
-          createdAt: task.createdAt,
-          updatedAt: task.updatedAt,
+          createdAt: new Date(task.createdAt as string),
+          updatedAt: new Date(task.updatedAt as string),
           synced: true
-        })
+        } as any)
 
       }
 

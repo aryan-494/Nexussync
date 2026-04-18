@@ -1,12 +1,14 @@
-export enum OperationType {
-  TASK_CREATE = "TASK_CREATE",
-  TASK_UPDATE = "TASK_UPDATE",
-  TASK_DELETE = "TASK_DELETE",
-}
+export const OperationType = {
+  TASK_CREATE: "TASK_CREATE",
+  TASK_UPDATE: "TASK_UPDATE",
+  TASK_DELETE: "TASK_DELETE",
+} as const;
 
+export type OperationTypeValue =
+  (typeof OperationType)[keyof typeof OperationType];
 export interface BaseOperation {
   opId: string
-  type: OperationType
+  type: OperationTypeValue
   entityId: string
  workspaceSlug: string
   payload: unknown
@@ -41,17 +43,17 @@ export interface TaskDeletePayload {
 }
 
 export interface TaskCreateOperation extends BaseOperation {
-  type: OperationType.TASK_CREATE
+  type: typeof OperationType.TASK_CREATE
   payload: TaskCreatePayload
 }
 
 export interface TaskUpdateOperation extends BaseOperation {
-  type: OperationType.TASK_UPDATE
+  type: typeof OperationType.TASK_UPDATE
   payload: TaskUpdatePayload
 }
 
 export interface TaskDeleteOperation extends BaseOperation {
-  type: OperationType.TASK_DELETE
+  type: typeof OperationType.TASK_DELETE
   payload: TaskDeletePayload
 }
 

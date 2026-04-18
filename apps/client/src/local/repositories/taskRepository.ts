@@ -113,10 +113,10 @@ export async function updateTaskLocal(
     if (existingOp && existingOp.seq !== undefined) {
 
       const mergedPayload = {
-        ...existingOp.payload,
-        ...payload,
-        updatedAt: now // 🔥 FIX
-      }
+  ...(existingOp.payload as TaskUpdatePayload),
+  ...payload,
+  updatedAt: now
+}
 
       await db.opLog.update(existingOp.seq, {
         payload: mergedPayload
