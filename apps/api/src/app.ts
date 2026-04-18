@@ -4,7 +4,7 @@ import cookieParser from "cookie-parser";
 
 import { contextMiddleware } from "./context.js";
 import { requestLogger } from "./middleware/requestLogger.js";
-import { apiRouter } from "../../api/src/routes/index.js";
+import { apiRouter } from "./routes/index.js"
 import { HttpError, NotFoundError } from "./errors.js";
 import { logger } from "./logger.js";
 
