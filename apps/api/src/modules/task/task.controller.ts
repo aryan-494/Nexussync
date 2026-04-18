@@ -19,14 +19,21 @@ function requireFullContext(req: Request) {
   const { user, workspace, role } = req.context;
 
   if (!user || !workspace || !role) {
-    throw new HttpError(
-      "Invalid request context",
-      500,
-      "INTERNAL_ERROR"
-    );
+    throw new HttpError("Invalid request context", 500, "INTERNAL_ERROR");
   }
 
   return { user, workspace, role };
+}
+
+/**
+ * ✅ FIX: normalize query param (string | string[] → string)
+ */
+function getSingleQueryParam(param: string | string[] | undefined, name: string): string {
+  if (!param) {
+    throw new HttpError(`${name} is required`, 400, "INVALID_QUERY_PARAM");
+  }
+
+  return Array.isArray(param) ? param[0] : param;
 }
 
 /**
@@ -38,29 +45,18 @@ export async function createTaskController(
   next: NextFunction
 ) {
   try {
-
     const { user, workspace, role } = requireFullContext(req);
 
     const body = validateDTO(CreateTaskDTO, req.body);
-   // const { id } = req.params;
 
     if (!body.id) {
-      throw new HttpError(
-        "Task ID is required",
-        400,
-        "INVALID_TASK_ID"
-      );
+      throw new HttpError("Task ID is required", 400, "INVALID_TASK_ID");
     }
 
-    // 🔹 Idempotency check
     const opId = body.opId;
 
     if (!opId) {
-      throw new HttpError(
-        "opId is required",
-        400,
-        "INVALID_OPERATION_ID"
-      );
+      throw new HttpError("opId is required", 400, "INVALID_OPERATION_ID");
     }
 
     const isNew = await idempotencyService.ensureIdempotent(
@@ -70,31 +66,20 @@ export async function createTaskController(
     );
 
     if (!isNew) {
-      return res.status(200).json({
-        status: "duplicate_ignored",
-      });
+      return res.status(200).json({ status: "duplicate_ignored" });
     }
 
     const task = await taskService.createTask({
-
-      id: body.id,   // <-- IMPORTANT (frontend id)
-
+      id: body.id,
       workspaceId: workspace.id,
-
       userId: user.id,
-
       role,
-
       title: body.title,
-
       description: body.description,
-
       priority: body.priority,
-
     });
 
     res.status(201).json(task);
-
   } catch (err) {
     next(err);
   }
@@ -109,7 +94,6 @@ export async function listTasksController(
   next: NextFunction
 ) {
   try {
-
     const { workspace, role } = requireFullContext(req);
 
     const pagination = validateDTO(PaginationDTO, req.query);
@@ -125,7 +109,6 @@ export async function listTasksController(
     });
 
     res.json(result);
-
   } catch (err) {
     next(err);
   }
@@ -140,17 +123,13 @@ export async function getTaskController(
   next: NextFunction
 ) {
   try {
-
     const { workspace } = requireFullContext(req);
 
-    const { id } = req.params;
+    // ✅ Ensure strict string
+    const id = req.params.id as string;
 
     if (!id) {
-      throw new HttpError(
-        "Task ID is required",
-        400,
-        "INVALID_TASK_ID"
-      );
+      throw new HttpError("Task ID is required", 400, "INVALID_TASK_ID");
     }
 
     const task = await taskService.getTaskById({
@@ -159,7 +138,6 @@ export async function getTaskController(
     });
 
     res.json(task);
-
   } catch (err) {
     next(err);
   }
@@ -174,30 +152,21 @@ export async function updateTaskController(
   next: NextFunction
 ) {
   try {
-
     const { user, workspace, role } = requireFullContext(req);
 
-    const { id } = req.params;
+    // ✅ Ensure strict string
+    const id = req.params.id as string;
 
     if (!id) {
-      throw new HttpError(
-        "Task ID is required",
-        400,
-        "INVALID_TASK_ID"
-      );
+      throw new HttpError("Task ID is required", 400, "INVALID_TASK_ID");
     }
 
     const updates = validateDTO(UpdateTaskDTO, req.body);
 
-    // 🔹 Idempotency check
     const opId = updates.opId;
 
     if (!opId) {
-      throw new HttpError(
-        "opId is required",
-        400,
-        "INVALID_OPERATION_ID"
-      );
+      throw new HttpError("opId is required", 400, "INVALID_OPERATION_ID");
     }
 
     const isNew = await idempotencyService.ensureIdempotent(
@@ -207,9 +176,7 @@ export async function updateTaskController(
     );
 
     if (!isNew) {
-      return res.status(200).json({
-        status: "duplicate_ignored",
-      });
+      return res.status(200).json({ status: "duplicate_ignored" });
     }
 
     const task = await taskService.updateTask({
@@ -221,7 +188,6 @@ export async function updateTaskController(
     });
 
     res.json(task);
-
   } catch (err) {
     next(err);
   }
@@ -236,27 +202,19 @@ export async function deleteTaskController(
   next: NextFunction
 ) {
   try {
-
     const { user, workspace, role } = requireFullContext(req);
 
-    const { id } = req.params;
+    // ✅ Ensure strict string
+    const id = req.params.id as string;
 
     if (!id) {
-      throw new HttpError(
-        "Task ID is required",
-        400,
-        "INVALID_TASK_ID"
-      );
+      throw new HttpError("Task ID is required", 400, "INVALID_TASK_ID");
     }
 
     const { opId } = req.body;
 
     if (!opId) {
-      throw new HttpError(
-        "opId is required",
-        400,
-        "INVALID_OPERATION_ID"
-      );
+      throw new HttpError("opId is required", 400, "INVALID_OPERATION_ID");
     }
 
     const isNew = await idempotencyService.ensureIdempotent(
@@ -266,9 +224,7 @@ export async function deleteTaskController(
     );
 
     if (!isNew) {
-      return res.status(200).json({
-        status: "duplicate_ignored",
-      });
+      return res.status(200).json({ status: "duplicate_ignored" });
     }
 
     await taskService.deleteTask({
@@ -278,7 +234,6 @@ export async function deleteTaskController(
     });
 
     res.status(204).send();
-
   } catch (err) {
     next(err);
   }

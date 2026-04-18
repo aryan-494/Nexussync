@@ -1,4 +1,4 @@
-import Redis from "ioredis";
+import {Redis} from "ioredis";
 
 export const redis = new Redis({
   host: "127.0.0.1",
@@ -9,6 +9,7 @@ redis.on("connect", () => {
   console.log("[redis] connected");
 });
 
-redis.on("error", (err) => {
-  console.error("[redis] error:", err);
+// ✅ explicitly type error
+redis.on("error", (err: Error) => {
+  console.error("[redis] error:", err.message);
 });

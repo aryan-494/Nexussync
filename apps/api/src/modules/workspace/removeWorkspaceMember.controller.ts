@@ -8,7 +8,8 @@ export async function removeWorkspaceMemberController(
   next: NextFunction
 ) {
   try {
-    const workspaceId = req.context?.workspace?.id;
+    // ✅ ensure workspaceId is strictly string
+    const workspaceId: string | undefined = req.context?.workspace?.id;
 
     if (!workspaceId) {
       throw new HttpError(
@@ -18,7 +19,8 @@ export async function removeWorkspaceMemberController(
       );
     }
 
-    const userId = req.params.userId;
+    // ✅ force TypeScript to treat as string
+    const userId = req.params.userId as string;
 
     if (!userId) {
       throw new HttpError(
