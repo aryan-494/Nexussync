@@ -1,15 +1,20 @@
 import {Redis} from "ioredis";
 
-export const redis = new Redis({
-  host: "127.0.0.1",
-  port: 6379,
-});
+const isProd = process.env.NODE_ENV === "production";
 
-redis.on("connect", () => {
-  console.log("[redis] connected");
-});
+export const redis = isProd
+  ? null // ❌ disable in production for now
+  : new Redis({
+      host: "127.0.0.1",
+      port: 6379,
+    });
 
-// ✅ explicitly type error
-redis.on("error", (err: Error) => {
-  console.error("[redis] error:", err.message);
-});
+if (redis) {
+  redis.on("connect", () => {
+    console.log("[redis] connected");
+  });
+
+  redis.on("error", (err: Error) => {
+    console.error("[redis] error:", err.message);
+  });
+}
