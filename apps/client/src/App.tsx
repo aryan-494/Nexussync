@@ -8,6 +8,9 @@ import { TaskPage } from "./pages/TaskPage";
 
 import {Login} from "./pages/login";
 import {Register} from "./pages/Register";
+
+
+
 import {Me} from "./pages/Me";
 
 function App() {
