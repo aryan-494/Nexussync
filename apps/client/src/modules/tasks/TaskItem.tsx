@@ -1,9 +1,14 @@
-import type { Task } from "../../api/task.api";
-
-
+type TaskView = {
+  id: string;
+  title: string;
+  description?: string;
+  status: string;
+  priority: string;
+  assignedTo?: string | null;
+};
 
 type Props = {
-  task: Task;
+  task: TaskView;
   canDelete: boolean;
   onDelete: (id: string) => Promise<void>;
   onStatusChange: (id: string, status: string) => Promise<void>;
@@ -24,20 +29,16 @@ export function TaskItem({
 
   return (
     <li>
-
       <div>
         <strong>{task.title}</strong>
       </div>
 
       {task.description && (
-        <div>
-          {task.description}
-        </div>
+        <div>{task.description}</div>
       )}
 
       <div>
         Status:
-
         <select
           value={task.status}
           onChange={handleStatusChange}
@@ -57,13 +58,10 @@ export function TaskItem({
       </div>
 
       {canDelete && (
-        <button
-          onClick={() => onDelete(task.id)}
-        >
+        <button onClick={() => onDelete(task.id)}>
           Delete
         </button>
       )}
-
     </li>
   );
 }

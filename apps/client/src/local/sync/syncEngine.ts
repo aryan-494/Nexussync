@@ -35,7 +35,7 @@ export function triggerPullSync(workspaceSlug: string) {
    Retry with exponential backoff
 ================================ */
 
-async function retryWithBackoff<T>(
+/* async function retryWithBackoff<T>(
   fn: () => Promise<T>,
   options?: {
     maxRetries?: number;
@@ -74,7 +74,7 @@ async function retryWithBackoff<T>(
     }
   }
 }
-
+ */
 
 
 
@@ -101,10 +101,10 @@ function announceLeader() {
    Network state
 ================================ */
 
-function isOnline() {
+/* function isOnline() {
   return navigator.onLine
 }
-
+ */
 /* =================================
    Fetch pending operations
 ================================ */
@@ -254,7 +254,7 @@ async function processQueue() {
   // 🔥 classify error
   const isNetworkError = status === 0
   const isServerError = status >= 500
-  const isClientError = status >= 400 && status < 500
+  //const isClientError = status >= 400 && status < 500
 
   const isRetryable = isNetworkError || isServerError
 

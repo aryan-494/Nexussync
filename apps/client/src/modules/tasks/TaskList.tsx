@@ -26,7 +26,14 @@ export function TaskList({
       {tasks.map((task) => (
         <TaskItem
           key={task.id}
-          task={task}
+          task={{
+            id: task.id,
+            title: task.title,
+            description: task.description,
+            status: task.status,
+            priority: task.priority ?? "MEDIUM",
+            assignedTo: task.assignedTo ?? null,
+          }}
           canDelete={canDelete}
           onDelete={onDelete}
           onStatusChange={onStatusChange}

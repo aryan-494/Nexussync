@@ -18,7 +18,7 @@ export function useTasks(slug: string) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
 
-  const totalPages = Math.ceil(total / limit);
+  //const totalPages = Math.ceil(total / limit);
 
   /*
   ================================
