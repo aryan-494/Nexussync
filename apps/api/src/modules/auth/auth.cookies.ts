@@ -28,8 +28,10 @@ export function setAuthCookies(
   const baseOptions: Omit<CookieOptions, "maxAge"> = {
     httpOnly: true,     // Very important! Prevents JS access (XSS protection)
     secure: isProd,     // HTTPS only in production
-    sameSite: "lax",    // Good balance of security + usability
-    path: "/",          // Cookie available on all routes
+    sameSite: isProd ? "none" : "lax",    // Good balance of security + usability
+    path: "/",   
+    
+    // Cookie available on all routes
   };
 
   // Access token cookie (short-lived)
