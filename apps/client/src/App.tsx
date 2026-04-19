@@ -6,7 +6,7 @@ import { ProtectedRoute } from "./routes/ProtectedRoute";
 import WorkspaceListPage from "./pages/WorkspaceListPage";
 import { TaskPage } from "./pages/TaskPage";
 
-import {Login} from "./pages/login";
+import { Login } from "./pages/Login";
 import {Register} from "./pages/Register";
 
 
