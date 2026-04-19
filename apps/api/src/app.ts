@@ -17,31 +17,27 @@ export function createApp() {
   /* -----------------------------
      CORS (MUST BE FIRST)
   ------------------------------ */
+const corsOptions: CorsOptions = {
+  origin: (origin, callback) => {
 
-  const corsOptions: CorsOptions = {
-    origin: (
-      origin: string | undefined,
-      callback: (err: Error | null, allow?: boolean) => void
-    ) => {
-      const allowed = [
-  process.env.FRONTEND_URL,
-].filter(Boolean) as string[];
+    if (!origin) return callback(null, true);
 
-if (allowed.length === 0) {
-  return callback(null, true); // fallback safety
-}
+    const allowedOrigin = process.env.FRONTEND_URL;
 
-      // allow requests with no origin (Postman, curl)
-      if (!origin) return callback(null, true);
+    // ✅ allow exact match
+    if (origin === allowedOrigin) {
+      return callback(null, true);
+    }
 
-      if (allowed.includes(origin)) {
-        return callback(null, true);
-      }
+    // ✅ allow vercel preview deployments
+    if (origin.endsWith(".vercel.app")) {
+      return callback(null, true);
+    }
 
-      return callback(new Error("Not allowed by CORS"));
-    },
-    credentials: true,
-  };
+    return callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
+};
 
   // ✅ APPLY CORS (IMPORTANT)
   app.use(cors(corsOptions));
