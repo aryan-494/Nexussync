@@ -25,7 +25,7 @@ const connectionLimiter = new RateLimiterMemory({
 export function initSocketServer(server: HttpServer) {
   io = new IOServer(server, {
     cors: {
-      origin: "http://localhost:5173",
+      origin: process.env.FRONTEND_URL,
       credentials: true,
     },
   });
